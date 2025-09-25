@@ -8,6 +8,16 @@ OVERVIEW
 ========
 The BGIN AI MVP is a multi-agent privacy-preserving research platform designed for blockchain governance. The system features three specialized agents (Archive, Codex, Discourse) that work together to facilitate research, policy analysis, and community collaboration while maintaining strict privacy controls.
 
+TRUST OVER IP (TOIP) INTEGRATION
+================================
+The system implements the Trust over IP (ToIP) framework (https://trustoverip.org/wp-content/toip-model/) to create a trusted, interoperable ecosystem for agent interactions. This includes:
+
+- Decentralized Identifiers (DIDs) for each agent
+- Verifiable Credentials for agent capabilities
+- Trust network establishment and management
+- Privacy-preserving collaboration protocols
+- ToIP-compliant consensus mechanisms
+
 CURRENT STATE
 =============
 ✅ COMPLETED:
@@ -19,6 +29,10 @@ CURRENT STATE
 - Docker containerization for easy deployment
 - Database schema and API endpoints
 - Authentication and security framework
+- Trust over IP (ToIP) framework integration
+- Agent DID management system
+- Verifiable credentials infrastructure
+- Trust relationship protocols
 
 🔄 READY FOR DATA POPULATION:
 - All placeholder/mock data has been removed

@@ -59,7 +59,7 @@ const BGINMultiAgentInterface = () => {
   const [generationProgress, setGenerationProgress] = useState(0);
   const messagesEndRef = useRef(null);
 
-  // Enhanced Three-Agent System Configuration
+  // Enhanced Three-Agent System Configuration with ToIP Framework
   const agentTypes = {
     archive: {
       id: 'archive',
@@ -72,7 +72,13 @@ const BGINMultiAgentInterface = () => {
       status: 'inactive',
       lastResponse: 'Never',
       performance: { accuracy: 0, speed: 0, correlations: 0 },
-      recentActivity: 'Agent not yet initialized'
+      recentActivity: 'Agent not yet initialized',
+      // ToIP Framework Integration
+      did: '', // Decentralized Identifier
+      trustScore: 0,
+      reputation: { overall: 0, accuracy: 0, reliability: 0, collaboration: 0, privacy: 0 },
+      credentials: [], // Verifiable Credentials
+      trustRelationships: [] // Trust network connections
     },
     codex: {
       id: 'codex',
@@ -85,7 +91,13 @@ const BGINMultiAgentInterface = () => {
       status: 'inactive',
       lastResponse: 'Never',
       performance: { accuracy: 0, speed: 0, frameworks: 0 },
-      recentActivity: 'Agent not yet initialized'
+      recentActivity: 'Agent not yet initialized',
+      // ToIP Framework Integration
+      did: '', // Decentralized Identifier
+      trustScore: 0,
+      reputation: { overall: 0, accuracy: 0, reliability: 0, collaboration: 0, privacy: 0 },
+      credentials: [], // Verifiable Credentials
+      trustRelationships: [] // Trust network connections
     },
     discourse: {
       id: 'discourse',
@@ -98,7 +110,13 @@ const BGINMultiAgentInterface = () => {
       status: 'inactive',
       lastResponse: 'Never',
       performance: { accuracy: 0, speed: 0, consensus: 0 },
-      recentActivity: 'Agent not yet initialized'
+      recentActivity: 'Agent not yet initialized',
+      // ToIP Framework Integration
+      did: '', // Decentralized Identifier
+      trustScore: 0,
+      reputation: { overall: 0, accuracy: 0, reliability: 0, collaboration: 0, privacy: 0 },
+      credentials: [], // Verifiable Credentials
+      trustRelationships: [] // Trust network connections
     }
   };
 
@@ -271,18 +289,18 @@ const BGINMultiAgentInterface = () => {
     const session = sessions[sessionId];
     
     if (isMultiAgent) {
-      return `**Multi-Agent Collaboration Response**\n\n**Status**: System ready for data population\n\n**Archive Agent**: Ready to process documents once knowledge base is loaded\n**Codex Agent**: Ready to analyze policies once frameworks are configured\n**Discourse Agent**: Ready to facilitate discussions once community platform is connected\n\n**Data Population Process**:\n1. **User Authentication**: Connect to BGIN member database\n2. **Knowledge Base**: Load research documents and policy frameworks\n3. **Community Integration**: Connect to Discourse forum and messaging\n4. **Privacy Services**: Integrate Kwaai for privacy-preserving features\n5. **Trust Network**: Initialize reputation and trust relationship systems\n\n**Implementation Guide**: See OPERATIONAL_DATA_GUIDE.md for detailed steps\n\n**Current Status**: All agents initialized and ready for external service configuration.`;
+      return `**Multi-Agent Collaboration Response**\n\n**Status**: System ready for ToIP framework implementation\n\n**Trust over IP Integration**:\n• **Layer 1 (Utility)**: Agent DIDs and verifiable credentials ready for deployment\n• **Layer 2 (Governance)**: Agent governance policies and trust protocols configured\n• **Layer 3 (Credential)**: Capability credentials and research verification ready\n• **Layer 4 (Application)**: Multi-agent interface with trust visualization\n\n**Agent Status**:\n• **Archive Agent**: Ready for DID creation and knowledge credential issuance\n• **Codex Agent**: Ready for policy analysis credential verification\n• **Discourse Agent**: Ready for community trust relationship establishment\n\n**ToIP Implementation Steps**:\n1. **Agent Identity**: Create DIDs for each agent using ToIP standards\n2. **Credential Issuance**: Issue verifiable credentials for agent capabilities\n3. **Trust Network**: Establish trust relationships between agents\n4. **Privacy Controls**: Implement selective disclosure and zero-knowledge proofs\n5. **Consensus Building**: Deploy ToIP-compliant consensus mechanisms\n\n**Implementation Guide**: See TOIP_AGENT_FRAMEWORK.md for detailed ToIP integration\n\n**Current Status**: All agents initialized with ToIP framework ready for deployment.`;
     }
     
     switch (agentType) {
       case 'archive':
-        return `**Archive Agent Response**\n\n**Status**: ${agent.status}\n**Knowledge Base**: ${currentSessionAgent.knowledgeBase}\n**Documents Available**: ${currentSessionAgent.documents}\n\n**Current Capabilities**:\n• Document analysis and processing\n• Knowledge synthesis and correlation\n• Cross-session research discovery\n• RAG (Retrieval Augmented Generation) queries\n\n**Data Population Steps**:\n1. **Connect to BGIN Research Repository** - Import existing research documents\n2. **Set up Vector Database** - Configure Qdrant for document embeddings\n3. **Load Policy Documents** - Import regulatory and policy frameworks\n4. **Configure Search Pipeline** - Set up document processing and indexing\n\n**Implementation**: Follow OPERATIONAL_DATA_GUIDE.md Section 4.1\n\n**Ready for**: Document upload and knowledge base population`;
+        return `**Archive Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Knowledge Base**: ${currentSessionAgent.knowledgeBase}\n**Documents Available**: ${currentSessionAgent.documents}\n\n**Current Capabilities**:\n• Document analysis and processing\n• Knowledge synthesis and correlation\n• Cross-session research discovery\n• RAG (Retrieval Augmented Generation) queries\n\n**ToIP Framework Integration**:\n• **DID Creation**: Ready to create decentralized identifier\n• **Capability Credentials**: Ready for verifiable credential issuance\n• **Trust Relationships**: Ready to establish trust with other agents\n• **Privacy Controls**: Ready for selective disclosure protocols\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier using ToIP standards\n2. **Issue Capability Credentials** - Create verifiable credentials for research capabilities\n3. **Connect to Trust Registry** - Register agent in ToIP trust registry\n4. **Set up Privacy Controls** - Implement selective disclosure for research data\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md Section 2.1\n\n**Ready for**: ToIP framework deployment and knowledge base population`;
         
       case 'codex':
-        return `**Codex Agent Response**\n\n**Status**: ${agent.status}\n**Policy Domains**: ${currentSessionAgent.policyDomains.length > 0 ? currentSessionAgent.policyDomains.join(', ') : 'None configured'}\n**Frameworks Available**: ${currentSessionAgent.frameworks}\n\n**Current Capabilities**:\n• Policy analysis and compliance checking\n• Standards development and management\n• Governance modeling and assessment\n• Multi-jurisdictional impact analysis\n\n**Data Population Steps**:\n1. **Load Regulatory Frameworks** - Import multi-jurisdictional policy documents\n2. **Configure Compliance Rules** - Set up jurisdiction-specific analysis\n3. **Connect to Policy Database** - Link to external policy repositories\n4. **Set up Impact Assessment** - Configure stakeholder analysis tools\n\n**Implementation**: Follow OPERATIONAL_DATA_GUIDE.md Section 4.2\n\n**Ready for**: Policy framework loading and compliance rule configuration`;
+        return `**Codex Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Policy Domains**: ${currentSessionAgent.policyDomains.length > 0 ? currentSessionAgent.policyDomains.join(', ') : 'None configured'}\n**Frameworks Available**: ${currentSessionAgent.frameworks}\n\n**Current Capabilities**:\n• Policy analysis and compliance checking\n• Standards development and management\n• Governance modeling and assessment\n• Multi-jurisdictional impact analysis\n\n**ToIP Framework Integration**:\n• **Governance Layer**: Ready to implement ToIP governance policies\n• **Credential Verification**: Ready for policy analysis credential verification\n• **Trust Protocols**: Ready for consensus building with other agents\n• **Privacy Compliance**: Ready for privacy-preserving policy analysis\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier for policy agent\n2. **Issue Policy Credentials** - Create verifiable credentials for policy analysis capabilities\n3. **Set up Governance Policies** - Implement ToIP-compliant governance rules\n4. **Configure Trust Protocols** - Establish trust relationships for policy collaboration\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md Section 2.2\n\n**Ready for**: ToIP framework deployment and policy framework loading`;
         
       case 'discourse':
-        return `**Discourse Agent Response**\n\n**Status**: ${agent.status}\n**Active Threads**: ${currentSessionAgent.activeThreads}\n**Participants**: ${session.participants}\n**Engagement Rate**: ${currentSessionAgent.engagementRate}%\n\n**Current Capabilities**:\n• Community engagement and facilitation\n• Consensus building and polling\n• Discussion thread management\n• Trust relationship establishment\n\n**Data Population Steps**:\n1. **Connect to BGIN Discourse Forum** - Link to existing community platform\n2. **Import Discussion Threads** - Load existing conversations and topics\n3. **Set up Trust Network** - Initialize reputation and relationship systems\n4. **Configure Consensus Tools** - Set up polling and decision-making mechanisms\n\n**Implementation**: Follow OPERATIONAL_DATA_GUIDE.md Section 4.3\n\n**Ready for**: Community platform connection and discussion facilitation setup`;
+        return `**Discourse Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Active Threads**: ${currentSessionAgent.activeThreads}\n**Participants**: ${session.participants}\n**Engagement Rate**: ${currentSessionAgent.engagementRate}%\n\n**Current Capabilities**:\n• Community engagement and facilitation\n• Consensus building and polling\n• Discussion thread management\n• Trust relationship establishment\n\n**ToIP Framework Integration**:\n• **Trust Network**: Ready to establish trust relationships with community members\n• **Consensus Protocols**: Ready for ToIP-compliant consensus building\n• **Privacy Controls**: Ready for privacy-preserving community interactions\n• **Credential Exchange**: Ready for community member credential verification\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier for community agent\n2. **Set up Trust Network** - Establish trust relationships with community members\n3. **Configure Consensus Mechanisms** - Implement ToIP-compliant consensus protocols\n4. **Enable Privacy Controls** - Set up selective disclosure for community interactions\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md Section 2.3\n\n**Ready for**: ToIP framework deployment and community platform connection`;
         
       default:
         return `**Agent Response**: ${agent.name} is ${agent.status}. Please configure external service connections to activate full functionality.`;

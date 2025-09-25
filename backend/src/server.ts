@@ -22,6 +22,7 @@ import discourseRoutes from './routes/agents/discourse';
 import synthesisRoutes from './routes/synthesis';
 import trustRoutes from './routes/trust';
 import healthRoutes from './routes/health';
+import toipRoutes from './routes/toip';
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler';
@@ -103,6 +104,9 @@ class BGINServer {
 
     // API routes
     this.app.use('/api/auth', authRoutes);
+    
+    // ToIP routes (public for agent registration)
+    this.app.use('/api/toip', toipRoutes);
     
     // Protected routes
     this.app.use('/api/agents/archive', authMiddleware, archiveRoutes);
