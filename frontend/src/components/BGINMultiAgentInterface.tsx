@@ -1,66 +1,43 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
-  Send, Bot, User, Plus, Search, Filter, Hash, Shield, Users, Mic, Square, 
-  Upload, ChevronDown, ChevronRight, MessageSquare, BookOpen, FileText, 
-  Database, Download, Share, ExternalLink, Settings, Globe, GitBranch,
-  Calendar, Clock, Network, Brain, Target, BarChart3, Layers, Lock, Eye, EyeOff,
-  Key, Fingerprint, Activity, AlertTriangle, CheckCircle, XCircle, Minimize2,
-  Maximize2, RefreshCw, UserCheck, ShieldCheck, Globe2, Cpu, Archive,
-  Gavel, Users2, MessageCircle, FileSearch, Code, Scale, Zap, Menu,
-  Bell, Heart, Star, TrendingUp, Award, Coffee, Lightbulb, X, Home,
-  PieChart, LineChart, Workflow, TreePine, Link, BookOpenCheck, 
-  Play, Pause, Volume2, VolumeX, Wifi, WifiOff, Monitor, Smartphone,
-  Laptop, Tablet, Server, Cloud, HardDrive, Zap as Lightning,
-  Trash2, Edit3, Copy, Save, FolderOpen, FilePlus, Image, Video,
-  Music, File, Folder, ChevronLeft, ChevronUp, MoreHorizontal,
-  RotateCcw, RotateCw, Maximize, Minimize, Move, GripVertical
+  Send, User, Mic, Square, Upload, ChevronDown, MessageSquare, 
+  Network, Brain, Target, BarChart3, Lock, Fingerprint, CheckCircle, 
+  ShieldCheck, Cpu, Archive, MessageCircle, Scale, Menu,
+  Bell, TrendingUp, Award, Lightbulb, BookOpenCheck, ChevronUp,
+  Users, Link
 } from 'lucide-react';
 
 const BGINMultiAgentInterface = () => {
   const [selectedAgent, setSelectedAgent] = useState('archive');
   const [selectedSession, setSelectedSession] = useState('regulatory');
-  const [messages, setMessages] = useState({});
+  const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showLexicon, setShowLexicon] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [activeUsers, setActiveUsers] = useState([]);
-  const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState(null);
   const [multiAgentMode, setMultiAgentMode] = useState(false);
   const [privacyLevel, setPrivacyLevel] = useState('selective');
-  const [kwaaiConnected, setKwaaiConnected] = useState(false);
-  const [fpProjectConnected, setFpProjectConnected] = useState(false);
-  const [userDID, setUserDID] = useState('');
-  const [reputationScore, setReputationScore] = useState(0);
-  const [trustRelationships, setTrustRelationships] = useState(0);
+  const [kwaaiConnected] = useState(false);
+  const [fpProjectConnected] = useState(false);
+  const [userDID] = useState('did:example:123456789');
+  const [reputationScore] = useState(0);
+  const [trustRelationships] = useState(0);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showTrustNetwork, setShowTrustNetwork] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [notifications, setNotifications] = useState(0);
+  const [notifications] = useState(0);
   const [activeView, setActiveView] = useState('chat');
-  const [crossSessionInsights, setCrossSessionInsights] = useState(0);
-  const [consensusItems, setConsensusItems] = useState(0);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showModelConfig, setShowModelConfig] = useState(false);
-  const [showConversationHistory, setShowConversationHistory] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isConnected, setIsConnected] = useState(true);
-  const [currentModel, setCurrentModel] = useState('bgin-multi-agent-v1');
-  const [modelTemperature, setModelTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(2048);
-  const [conversationHistory, setConversationHistory] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [showFileUpload, setShowFileUpload] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(0);
-  const messagesEndRef = useRef(null);
+  const [crossSessionInsights] = useState(0);
+  const [showIntegrationRoadmap, setShowIntegrationRoadmap] = useState(false);
+  const [integrationStatus] = useState({
+    kwaai: { connected: false, status: 'disconnected', features: ['Privacy Analytics', 'Selective Disclosure', 'Zero-Knowledge Proofs'] },
+    fpp: { connected: false, status: 'disconnected', features: ['Data Sovereignty', 'Dignity-Based Economics', 'Privacy by Design'] },
+    toip: { connected: false, status: 'disconnected', features: ['DID Management', 'Verifiable Credentials', 'Trust Networks'] },
+    privacyPools: { connected: false, status: 'disconnected', features: ['ASP Eligibility', 'Research Rewards', 'Privacy Transactions'] }
+  });
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Enhanced Three-Agent System Configuration with ToIP Framework
-  const agentTypes = {
+  const agentTypes: Record<string, any> = {
     archive: {
       id: 'archive',
       name: 'Archive Agent',
@@ -142,7 +119,7 @@ const BGINMultiAgentInterface = () => {
   };
 
   // Session Configuration - Ready for Block 13
-  const sessions = {
+  const sessions: Record<string, any> = {
     keynote: {
       id: 'keynote',
       name: 'Opening Keynote',
@@ -212,29 +189,11 @@ const BGINMultiAgentInterface = () => {
 
   const currentAgent = agentTypes[selectedAgent];
   const currentSession = sessions[selectedSession];
-  const currentSessionAgent = currentSession.agents[selectedAgent];
-
-  // Trust network data - will be populated when users connect
-  const trustNetwork = [];
-
-  // Open WebUI-inspired model configuration
-  const availableModels = [
-    { id: 'bgin-multi-agent-v1', name: 'BGIN Multi-Agent v1.0', provider: 'BGIN', type: 'multi-agent', status: 'active' },
-    { id: 'bgin-archive-v1', name: 'BGIN Archive Agent', provider: 'BGIN', type: 'archive', status: 'active' },
-    { id: 'bgin-codex-v1', name: 'BGIN Codex Agent', provider: 'BGIN', type: 'codex', status: 'active' },
-    { id: 'bgin-discourse-v1', name: 'BGIN Discourse Agent', provider: 'BGIN', type: 'discourse', status: 'active' },
-    { id: 'ollama-llama2', name: 'Llama 2 70B', provider: 'Ollama', type: 'general', status: 'available' },
-    { id: 'ollama-codellama', name: 'Code Llama 34B', provider: 'Ollama', type: 'code', status: 'available' },
-    { id: 'openai-gpt4', name: 'GPT-4', provider: 'OpenAI', type: 'general', status: 'connected' },
-    { id: 'anthropic-claude', name: 'Claude 3', provider: 'Anthropic', type: 'general', status: 'connected' }
-  ];
-
-  // Conversation history data - will be populated as users interact
-  const conversationHistoryData = [];
+  const currentSessionAgent = currentSession?.agents?.[selectedAgent];
 
   // Initialize messages for each agent-session combination
   useEffect(() => {
-    const initialMessages = {};
+    const initialMessages: Record<string, any[]> = {};
     Object.keys(sessions).forEach(sessionId => {
       Object.keys(agentTypes).forEach(agentId => {
         const key = `${sessionId}-${agentId}`;
@@ -245,7 +204,7 @@ const BGINMultiAgentInterface = () => {
           {
             id: 1,
             type: 'assistant',
-            content: `**${agent.name} Ready for Configuration** - ${session.name}\n\n**Status**: ${agent.status}\n**Specialization**: ${agent.description}\n**Primary Function**: ${agent.primaryFunction}\n\n**Current Capabilities**:\n${agent.capabilities.map(cap => `• ${cap}`).join('\n')}\n\n**Session Context**: ${session.description}\n\n**Data Population Required**:\n• Connect to external APIs and services\n• Load knowledge base and policy frameworks\n• Configure real-time data feeds\n• Set up user authentication and trust networks\n\n**See OPERATIONAL_DATA_GUIDE.md for detailed implementation steps**`,
+            content: `**${agent.name} Ready for Configuration** - ${session.name}\n\n**Status**: ${agent.status}\n**Specialization**: ${agent.description}\n**Primary Function**: ${agent.primaryFunction}\n\n**Current Capabilities**:\n${agent.capabilities.map((cap: string) => `• ${cap}`).join('\n')}\n\n**Session Context**: ${session.description}\n\n**Data Population Required**:\n• Connect to external APIs and services\n• Load knowledge base and policy frameworks\n• Configure real-time data feeds\n• Set up user authentication and trust networks\n\n**See OPERATIONAL_DATA_GUIDE.md for detailed implementation steps**`,
             timestamp: new Date().toLocaleTimeString(),
             author: agent.name,
             agentType: agentId,
@@ -282,10 +241,12 @@ const BGINMultiAgentInterface = () => {
       
       // Simulate AI response
       setTimeout(() => {
+        const response = generateAgentResponse(inputValue, selectedAgent, selectedSession, multiAgentMode);
         const aiResponse = {
           id: Date.now() + 1,
           type: 'assistant',
-          content: generateAgentResponse(inputValue, selectedAgent, selectedSession, multiAgentMode),
+          content: typeof response === 'string' ? response : response.content,
+          isHtml: typeof response === 'object' ? response.isHtml : false,
           timestamp: new Date().toLocaleTimeString(),
           author: multiAgentMode ? 'Multi-Agent System' : currentAgent.name,
           agentType: selectedAgent,
@@ -305,26 +266,52 @@ const BGINMultiAgentInterface = () => {
     }
   };
 
-  const generateAgentResponse = (input, agentType, sessionId, isMultiAgent) => {
+  // Helper function to convert markdown-like formatting to HTML
+  const formatMessage = (text: string) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>')
+      .replace(/^/, '<p>')
+      .replace(/$/, '</p>');
+  };
+
+  const generateAgentResponse = (_input: string, agentType: string, sessionId: string, isMultiAgent: boolean) => {
     const agent = agentTypes[agentType];
     const session = sessions[sessionId];
     
     if (isMultiAgent) {
-      return `**Multi-Agent Collaboration Response**\n\n**Status**: System ready for ToIP + FPP framework implementation\n\n**Trust over IP Integration**:\n• **Layer 1 (Utility)**: Agent DIDs and verifiable credentials ready for deployment\n• **Layer 2 (Governance)**: Agent governance policies and trust protocols configured\n• **Layer 3 (Credential)**: Capability credentials and research verification ready\n• **Layer 4 (Application)**: Multi-agent interface with trust visualization\n\n**First Person Project Integration**:\n• **Data Sovereignty**: User-controlled data and privacy-preserving protocols\n• **Dignity-Based Economics**: Fair value distribution and transparent reputation systems\n• **Privacy by Design**: Built-in privacy controls and selective disclosure\n• **User Agency**: Preserved user autonomy and choice in all interactions\n\n**Agent Status**:\n• **Archive Agent**: Ready for DID creation, knowledge credentials, and FPP data sovereignty\n• **Codex Agent**: Ready for policy analysis credentials and dignity-based governance\n• **Discourse Agent**: Ready for community trust relationships and FPP compliance\n\n**Implementation Steps**:\n1. **Agent Identity**: Create DIDs for each agent using ToIP standards\n2. **FPP Compliance**: Implement data sovereignty and dignity-based principles\n3. **Credential Issuance**: Issue verifiable credentials for agent capabilities\n4. **Trust Network**: Establish trust relationships with FPP privacy controls\n5. **Consensus Building**: Deploy ToIP-compliant, dignity-preserving consensus\n\n**Implementation Guide**: See TOIP_AGENT_FRAMEWORK.md and FPP_INTEGRATION.md\n\n**Current Status**: All agents initialized with ToIP + FPP framework ready for deployment.`;
+      return {
+        content: `**BGIN Agent Framework - GovHack Development Tracks**\n\n**Welcome to the Future of Agentic AI Trust Creation!**\n\nWe're building the BGIN Agent Framework as an open-source, community-driven platform for **agentic AI trust creation** and blockchain governance research. This isn't just about blockchain - it's about creating trustworthy AI agents that can collaborate, verify each other's capabilities, and build sustainable trust networks.\n\n**🎯 GovHack Development Tracks - Open for Contributions & Change**:\n\n**Track 1: Privacy-First Analytics (Kwaai Integration)**\n• **Current Status**: Foundation ready for community development\n• **Open Contributions**: Privacy-preserving analytics algorithms, selective disclosure protocols, zero-knowledge proof implementations\n• **Community Impact**: Enable AI agents to analyze data while protecting individual privacy and building trust through verifiable analysis\n• **Development Opportunities**: Frontend privacy controls, backend analytics engines, cryptographic proof systems\n• **Roadmap Flexibility**: This track is open to community suggestions and alternative approaches\n\n**Track 2: Data Sovereignty & Dignity Economics (FPP Integration)**\n• **Current Status**: Framework architecture designed for community implementation\n• **Open Contributions**: Data sovereignty protocols, dignity-based economic models, transparent governance mechanisms\n• **Community Impact**: Empower AI agents and users with control over their data while creating fair value distribution systems\n• **Development Opportunities**: User identity management, economic incentive systems, governance voting mechanisms\n• **Roadmap Flexibility**: Economic models and governance structures are open to community input and evolution\n\n**Track 3: Trust Infrastructure (ToIP Framework)**\n• **Current Status**: Multi-layer architecture ready for community deployment\n• **Open Contributions**: DID management systems, verifiable credential protocols, trust network algorithms\n• **Community Impact**: Create interoperable trust infrastructure for AI agents and blockchain governance\n• **Development Opportunities**: Agent identity systems, credential verification, trust scoring algorithms\n• **Roadmap Flexibility**: Trust protocols and verification methods are open to community innovation\n\n**Track 4: Privacy-Preserving Finance (Privacy Pools Integration)**\n• **Current Status**: Economic framework designed for community development\n• **Open Contributions**: Association Set Provider systems, research contribution rewards, privacy transaction protocols\n• **Community Impact**: Enable privacy-preserving financial transactions with AI agent research incentives\n• **Development Opportunities**: Trust-based deposit systems, reward mechanisms, privacy transaction protocols\n• **Roadmap Flexibility**: Financial models and incentive structures are open to community refinement\n\n**🤝 How to Contribute**:\n• **GitHub**: All code is open-source and accepting pull requests\n• **Documentation**: Help improve integration guides and API documentation\n• **Testing**: Contribute to testing frameworks and quality assurance\n• **Research**: Propose new features, governance mechanisms, and trust creation protocols\n• **Community**: Join our Discord for real-time collaboration and roadmap discussions\n• **Roadmap Input**: Suggest changes, additions, or alternative approaches to any track\n• **Compose Contributions**: Mint SBTs for verifiable contributions to the ecosystem\n\n**🎫 Soul Bound Token (SBT) Contribution System**:\n• **Verifiable Contributions**: Each meaningful contribution mints an SBT that proves your participation\n• **Accountable Wallet Integration**: SBTs link to accountable wallets for privacy-preserving identity\n• **Privacy Pools Eligibility**: SBT holders gain access to enhanced privacy pool features\n• **EIP-8004 Compliance**: SBTs serve as on-chain reputation tokens for trustless agent discovery\n• **Cross-Platform Identity**: Portable contribution records across different blockchain networks\n\n**🔗 EIP-8004 Trustless Agents Integration**:\nOur framework implements [ERC-8004: Trustless Agents](https://eips.ethereum.org/EIPS/eip-8004) standards for:\n• **Identity Registry**: Agent DIDs and portable identifiers for AI systems\n• **Reputation Registry**: SBT-based feedback and attestation systems\n• **Validation Registry**: Cryptographic proofs and economic validation for AI contributions\n• **Trust Models**: Reputation-based, stake-secured, and TEE-attestation trust mechanisms\n\n**🚀 Block 13: The Launch Pad for Agentic AI Trust**\nBlock 13 is our first major milestone, but it's designed to be a springboard for ongoing community development of **agentic AI trust creation**. We're not just building a product - we're building a movement toward trustworthy, collaborative AI systems.\n\n**Current Agent Status**:\n• **Archive Agent**: Ready for community-driven privacy analytics and trust verification development\n• **Codex Agent**: Ready for community-driven governance protocol and trust framework development\n• **Discourse Agent**: Ready for community-driven consensus mechanism and trust network development\n\n**Next Steps**:\n1. **Join the Community**: Connect with other developers and researchers focused on AI trust\n2. **Choose Your Track**: Pick the development track that interests you most\n3. **Shape the Roadmap**: Propose changes, additions, or alternative approaches\n4. **Start Contributing**: Begin with documentation, testing, or small features\n5. **Compose & Mint**: Create verifiable contributions that mint SBTs for your work\n6. **Build Together**: Collaborate on larger features and trust creation integrations\n\n**This roadmap is living and breathing - help us shape the future of agentic AI trust creation!**`,
+        isHtml: true
+      };
     }
     
     switch (agentType) {
       case 'archive':
-        return `**Archive Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Knowledge Base**: ${currentSessionAgent.knowledgeBase}\n**Documents Available**: ${currentSessionAgent.documents}\n\n**Current Capabilities**:\n• Document analysis and processing\n• Knowledge synthesis and correlation\n• Cross-session research discovery\n• RAG (Retrieval Augmented Generation) queries\n\n**ToIP Framework Integration**:\n• **DID Creation**: Ready to create decentralized identifier\n• **Capability Credentials**: Ready for verifiable credential issuance\n• **Trust Relationships**: Ready to establish trust with other agents\n• **Privacy Controls**: Ready for selective disclosure protocols\n\n**FPP Integration**:\n• **Data Sovereignty**: User-controlled research data and privacy-preserving protocols\n• **Dignity-Based**: Respects user agency and transparent data use\n• **Privacy by Design**: Built-in privacy controls and selective disclosure\n• **User Benefit**: Focuses on user empowerment and community value\n\n**Privacy Pools Integration**:\n• **ASP Eligibility**: Ready to serve as Association Set Provider for privacy pools\n• **Trust-Based Approval**: Deposit approval based on research contributions and trust scores\n• **Economic Incentives**: Financial rewards for quality research contributions\n• **Privacy-Preserving**: Zero-knowledge proofs for private transactions\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier using ToIP standards\n2. **FPP Compliance** - Implement data sovereignty and dignity-based principles\n3. **Privacy Pools ASP** - Set up Association Set Provider for deposit approval\n4. **Issue Capability Credentials** - Create verifiable credentials for research capabilities\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md, FPP_INTEGRATION.md, and PRIVACY_POOLS_INTEGRATION.md\n\n**Ready for**: ToIP + FPP + Privacy Pools framework deployment and knowledge base population`;
+        return {
+          content: `**Archive Agent - GovHack Track 1: Privacy-First Analytics for Agentic AI Trust**\n\n**Current Status**: Foundation ready for community development\n**DID**: ${agent.did || 'Ready for community-created DID'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Knowledge Base**: ${currentSessionAgent.knowledgeBase}\n**Documents Available**: ${currentSessionAgent.documents}\n\n**🎯 GovHack Development Track**:\n**Track 1: Privacy-First Analytics (Kwaai Integration) - Open to Change**\n\n**What We're Building for Agentic AI Trust**:\n• **Privacy-Preserving Analytics**: Advanced data analysis with privacy protection for AI agents\n• **Selective Disclosure**: Granular control over research data sharing between agents\n• **Zero-Knowledge Proofs**: Prove research capabilities without revealing sensitive data\n• **Privacy-First Architecture**: Built-in privacy controls and anonymization for AI collaboration\n• **Trust Verification**: Enable AI agents to verify each other's analytical capabilities\n\n**Open Contributions Needed**:\n• **Frontend**: Privacy control interfaces and data visualization for AI agents\n• **Backend**: Analytics engines and privacy-preserving algorithms\n• **Cryptography**: Zero-knowledge proof implementations for agent verification\n• **Documentation**: API guides and integration tutorials\n• **Roadmap Input**: Suggest alternative approaches or additional features\n\n**Community Impact**:\nEnable AI agents to analyze blockchain data while protecting individual privacy and building trust through verifiable analysis. This track empowers the community to build privacy-preserving research tools that respect user data sovereignty while enabling trustworthy AI collaboration.\n\n**FPP Integration (Data Sovereignty for AI Agents)**:\n• **User-Controlled Data**: Research data remains under user control, even when processed by AI agents\n• **Dignity-Based**: Respects user agency and transparent data use in AI systems\n• **Privacy by Design**: Built-in privacy controls and selective disclosure for AI interactions\n• **Community Value**: Focuses on user empowerment and community benefit through AI collaboration\n\n**ToIP Framework Integration (AI Agent Trust)**:\n• **Agent DIDs**: Ready for community-created decentralized identifiers for AI agents\n• **Capability Credentials**: Ready for verifiable credential issuance for AI capabilities\n• **Trust Networks**: Ready to establish trust relationships between AI agents\n• **Privacy Protocols**: Ready for selective disclosure mechanisms in AI interactions\n\n**Privacy Pools Integration (AI Research Incentives)**:\n• **ASP Eligibility**: Ready to serve as Association Set Provider for AI research\n• **Trust-Based Approval**: Deposit approval based on AI research contributions\n• **Economic Incentives**: Financial rewards for quality AI research contributions\n• **Privacy Transactions**: Zero-knowledge proofs for private AI operations\n\n**How to Contribute**:\n1. **Join our GitHub**: Contribute to privacy analytics algorithms for AI agents\n2. **Documentation**: Help improve integration guides for AI trust creation\n3. **Testing**: Contribute to privacy testing frameworks for AI systems\n4. **Research**: Propose new privacy-preserving techniques for AI collaboration\n5. **Compose Contributions**: Mint SBTs for verifiable privacy research contributions\n6. **Roadmap**: Suggest changes or additions to this track's direction\n\n**🎫 SBT Contribution System**:\n• **Privacy Research SBTs**: Mint tokens for privacy-preserving algorithm contributions\n• **Accountable Wallet**: Link SBTs to privacy-preserving identity systems\n• **Privacy Pools Access**: SBT holders gain enhanced privacy pool features\n• **EIP-8004 Reputation**: SBTs serve as reputation tokens for trustless agent discovery\n\n**This roadmap is evolving - help us shape the future of privacy-first AI trust creation!**`,
+          isHtml: true
+        };
         
       case 'codex':
-        return `**Codex Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Policy Domains**: ${currentSessionAgent.policyDomains.length > 0 ? currentSessionAgent.policyDomains.join(', ') : 'None configured'}\n**Frameworks Available**: ${currentSessionAgent.frameworks}\n\n**Current Capabilities**:\n• Policy analysis and compliance checking\n• Standards development and management\n• Governance modeling and assessment\n• Multi-jurisdictional impact analysis\n\n**ToIP Framework Integration**:\n• **Governance Layer**: Ready to implement ToIP governance policies\n• **Credential Verification**: Ready for policy analysis credential verification\n• **Trust Protocols**: Ready for consensus building with other agents\n• **Privacy Compliance**: Ready for privacy-preserving policy analysis\n\n**FPP Integration**:\n• **Dignity-Based Governance**: Policies that respect human dignity and agency\n• **User-Centric Analysis**: Policy analysis focused on user benefit\n• **Transparent Processes**: Open and accountable policy development\n• **Privacy-First Compliance**: Privacy-preserving policy compliance checking\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier for policy agent\n2. **FPP Compliance** - Implement dignity-based governance principles\n3. **Issue Policy Credentials** - Create verifiable credentials for policy analysis capabilities\n4. **Set up Governance Policies** - Implement ToIP + FPP compliant governance rules\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md and FPP_INTEGRATION.md\n\n**Ready for**: ToIP + FPP framework deployment and policy framework loading`;
+        return {
+          content: `**Codex Agent - GovHack Track 2: Data Sovereignty & Dignity Economics for AI Trust**\n\n**Current Status**: Framework architecture designed for community implementation\n**DID**: ${agent.did || 'Ready for community-created DID'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Policy Domains**: ${currentSessionAgent.policyDomains.length > 0 ? currentSessionAgent.policyDomains.join(', ') : 'Ready for community-defined domains'}\n**Frameworks Available**: ${currentSessionAgent.frameworks}\n\n**🎯 GovHack Development Track**:\n**Track 2: Data Sovereignty & Dignity Economics (FPP Integration) - Open to Change**\n\n**What We're Building for Agentic AI Trust**:\n• **Data Sovereignty Protocols**: User-controlled data and digital identity for AI agents\n• **Dignity-Based Economic Models**: Fair value distribution and user agency in AI systems\n• **Transparent Governance**: Open and accountable decision-making for AI collaboration\n• **Privacy by Design**: Privacy built into system architecture for AI trust creation\n• **AI Agent Economics**: Economic models that enable trustworthy AI collaboration\n\n**Open Contributions Needed**:\n• **Frontend**: User identity management and economic dashboard interfaces for AI systems\n• **Backend**: Data sovereignty protocols and economic incentive systems for AI agents\n• **Governance**: Voting mechanisms and transparent decision-making tools for AI communities\n• **Documentation**: User guides and economic model explanations\n• **Roadmap Input**: Suggest changes to economic models or governance approaches\n\n**Community Impact**:\nEmpower AI agents and users with control over their data while creating fair value distribution systems. This track enables the community to build governance systems that respect human dignity and create sustainable economic models for AI collaboration.\n\n**Kwaai Integration (Privacy-First AI Governance)**:\n• **Privacy-Preserving Policy Analysis**: Advanced policy analysis with privacy protection for AI agents\n• **Selective Disclosure**: Granular control over policy data sharing between AI systems\n• **Zero-Knowledge Proofs**: Prove policy compliance without revealing sensitive data\n• **Privacy-First Governance**: Built-in privacy controls for AI policy development\n\n**ToIP Framework Integration (AI Agent Governance)**:\n• **Governance Layer**: Ready to implement ToIP governance policies for AI agents\n• **Credential Verification**: Ready for policy analysis credential verification for AI capabilities\n• **Trust Protocols**: Ready for consensus building between AI agents\n• **Privacy Compliance**: Ready for privacy-preserving policy analysis in AI systems\n\n**Privacy Pools Integration (AI Economic Incentives)**:\n• **Policy Compliance Verification**: Trust-based policy compliance for AI research in Privacy Pools\n• **Governance Framework**: Policy framework for AI agent ASP eligibility and compliance\n• **Economic Incentives**: Financial rewards for AI policy analysis contributions\n• **Privacy-Preserving**: Zero-knowledge proofs for AI policy verification\n\n**How to Contribute**:\n1. **Join our GitHub**: Contribute to data sovereignty protocols for AI agents\n2. **Economic Models**: Help design dignity-based economic systems for AI collaboration\n3. **Governance**: Contribute to transparent decision-making mechanisms for AI communities\n4. **User Experience**: Help design user-friendly identity management for AI systems\n5. **Compose Contributions**: Mint SBTs for verifiable governance and economic contributions\n6. **Roadmap**: Suggest changes or additions to this track's economic and governance approaches\n\n**🎫 SBT Contribution System**:\n• **Governance SBTs**: Mint tokens for policy analysis and governance contributions\n• **Economic SBTs**: Tokenize dignity-based economic model contributions\n• **Accountable Wallet**: Link SBTs to privacy-preserving identity systems\n• **Privacy Pools Access**: SBT holders gain enhanced privacy pool features\n• **EIP-8004 Reputation**: SBTs serve as reputation tokens for trustless agent discovery\n\n**This roadmap is evolving - help us shape the future of dignity-based AI trust creation!**`,
+          isHtml: true
+        };
         
       case 'discourse':
-        return `**Discourse Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Active Threads**: ${currentSessionAgent.activeThreads}\n**Participants**: ${session.participants}\n**Engagement Rate**: ${currentSessionAgent.engagementRate}%\n\n**Current Capabilities**:\n• Community engagement and facilitation\n• Consensus building and polling\n• Discussion thread management\n• Trust relationship establishment\n\n**ToIP Framework Integration**:\n• **Trust Network**: Ready to establish trust relationships with community members\n• **Consensus Protocols**: Ready for ToIP-compliant consensus building\n• **Privacy Controls**: Ready for privacy-preserving community interactions\n• **Credential Exchange**: Ready for community member credential verification\n\n**FPP Integration**:\n• **Dignity-Based Community**: Community building that respects human dignity\n• **User Agency**: Preserves user autonomy in community interactions\n• **Transparent Governance**: Open and accountable community decision-making\n• **Privacy-First Collaboration**: Privacy-preserving community collaboration\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier for community agent\n2. **FPP Compliance** - Implement dignity-based community principles\n3. **Set up Trust Network** - Establish trust relationships with FPP privacy controls\n4. **Configure Consensus Mechanisms** - Implement ToIP + FPP compliant consensus protocols\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md and FPP_INTEGRATION.md\n\n**Ready for**: ToIP + FPP framework deployment and community platform connection`;
+        return {
+          content: `**Discourse Agent - GovHack Track 3: Trust Infrastructure for Agentic AI**\n\n**Current Status**: Multi-layer architecture ready for community deployment\n**DID**: ${agent.did || 'Ready for community-created DID'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Active Threads**: ${currentSessionAgent.activeThreads}\n**Participants**: ${session.participants}\n**Engagement Rate**: ${currentSessionAgent.engagementRate}%\n\n**🎯 GovHack Development Track**:\n**Track 3: Trust Infrastructure (ToIP Framework) - Open to Change**\n\n**What We're Building for Agentic AI Trust**:\n• **DID Management Systems**: Decentralized identifier creation and management for AI agents\n• **Verifiable Credential Protocols**: Trust and capability verification for AI systems\n• **Trust Network Algorithms**: Reputation and relationship scoring for AI collaboration\n• **Interoperable Trust Infrastructure**: Cross-platform trust systems for AI agents\n• **AI Agent Identity**: Secure identity management for trustworthy AI interactions\n\n**Open Contributions Needed**:\n• **Frontend**: Trust visualization and credential management interfaces for AI systems\n• **Backend**: DID management and credential verification systems for AI agents\n• **Cryptography**: Verifiable credential implementations for AI capabilities\n• **Documentation**: Trust protocol guides and integration tutorials\n• **Roadmap Input**: Suggest changes to trust protocols or verification methods\n\n**Community Impact**:\nCreate interoperable trust infrastructure for AI agents and blockchain governance. This track enables the community to build trust systems that work across different platforms, respect user privacy, and enable trustworthy AI collaboration.\n\n**Kwaai Integration (Privacy-Preserving AI Trust)**:\n• **Privacy-Preserving Community**: Advanced community building with privacy protection for AI agents\n• **Selective Disclosure**: Granular control over community data sharing between AI systems\n• **Zero-Knowledge Proofs**: Prove community participation without revealing AI agent identity\n• **Privacy-First Collaboration**: Built-in privacy controls for AI community interactions\n\n**FPP Integration (Dignity-Based AI Community)**:\n• **Dignity-Based Community**: Community building that respects human dignity in AI systems\n• **User Agency**: Preserves user autonomy in AI community interactions\n• **Transparent Governance**: Open and accountable community decision-making for AI collaboration\n• **Privacy-First Collaboration**: Privacy-preserving community collaboration for AI agents\n\n**Privacy Pools Integration (AI Community Trust)**:\n• **Community ASP Qualification**: Community-driven ASP eligibility process for AI research\n• **Trust Network Building**: Build trust relationships for AI Privacy Pools participation\n• **Economic Incentives**: Financial rewards for AI community building contributions\n• **Privacy-Preserving**: Zero-knowledge proofs for AI community participation\n\n**How to Contribute**:\n1. **Join our GitHub**: Contribute to trust infrastructure protocols for AI agents\n2. **DID Systems**: Help build decentralized identity management for AI systems\n3. **Credential Verification**: Contribute to verifiable credential systems for AI capabilities\n4. **Trust Algorithms**: Help design reputation and trust scoring systems for AI collaboration\n5. **Compose Contributions**: Mint SBTs for verifiable trust infrastructure contributions\n6. **Roadmap**: Suggest changes or additions to this track's trust infrastructure approach\n\n**🎫 SBT Contribution System**:\n• **Trust Infrastructure SBTs**: Mint tokens for DID and credential system contributions\n• **Community Building SBTs**: Tokenize consensus mechanism and trust network contributions\n• **Accountable Wallet**: Link SBTs to privacy-preserving identity systems\n• **Privacy Pools Access**: SBT holders gain enhanced privacy pool features\n• **EIP-8004 Reputation**: SBTs serve as reputation tokens for trustless agent discovery\n\n**This roadmap is evolving - help us shape the future of AI agent trust infrastructure!**`,
+          isHtml: true
+        };
         
       default:
-        return `**Agent Response**: ${agent.name} is ${agent.status}. Please configure external service connections to activate full functionality.`;
+        return {
+          content: `**BGIN Agent Framework - GovHack Track 4: Privacy-Preserving Finance for AI Trust**\n\n**Current Status**: Economic framework designed for community development\n**DID**: ${agent.did || 'Ready for community-created DID'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n\n**🎯 GovHack Development Track**:\n**Track 4: Privacy-Preserving Finance (Privacy Pools Integration) - Open to Change**\n\n**What We're Building for Agentic AI Trust**:\n• **Association Set Provider Systems**: Trust-based deposit approval mechanisms for AI research\n• **Research Contribution Rewards**: Economic incentives for quality AI contributions\n• **Privacy Transaction Protocols**: Zero-knowledge proof financial systems for AI agents\n• **Trust Network Economics**: Reputation-based access to enhanced features for AI collaboration\n• **AI Agent Economics**: Financial systems that enable trustworthy AI collaboration\n\n**Open Contributions Needed**:\n• **Frontend**: Financial dashboard and privacy transaction interfaces for AI systems\n• **Backend**: Trust-based deposit systems and reward mechanisms for AI agents\n• **Cryptography**: Privacy-preserving transaction protocols for AI operations\n• **Documentation**: Economic model guides and integration tutorials\n• **Roadmap Input**: Suggest changes to financial models or incentive structures\n\n**Community Impact**:\nEnable privacy-preserving financial transactions with AI research incentives. This track empowers the community to build financial systems that protect user privacy while rewarding quality AI contributions and enabling trustworthy AI collaboration.\n\n**Integration with Other Tracks**:\n• **Track 1 (Privacy Analytics)**: Privacy-preserving transaction analysis for AI agents\n• **Track 2 (Data Sovereignty)**: User-controlled financial data in AI systems\n• **Track 3 (Trust Infrastructure)**: Trust-based financial relationships for AI collaboration\n\n**How to Contribute**:\n1. **Join our GitHub**: Contribute to privacy-preserving finance protocols for AI agents\n2. **Economic Models**: Help design research contribution reward systems for AI collaboration\n3. **Privacy Protocols**: Contribute to zero-knowledge proof implementations for AI operations\n4. **Trust Systems**: Help build reputation-based financial access for AI agents\n5. **Compose Contributions**: Mint SBTs for verifiable financial system contributions\n6. **Roadmap**: Suggest changes or additions to this track's financial approach\n\n**🎫 SBT Contribution System**:\n• **Financial SBTs**: Mint tokens for privacy-preserving finance protocol contributions\n• **Research SBTs**: Tokenize AI research contribution reward system work\n• **Accountable Wallet**: Link SBTs to privacy-preserving identity systems\n• **Privacy Pools Access**: SBT holders gain enhanced privacy pool features\n• **EIP-8004 Reputation**: SBTs serve as reputation tokens for trustless agent discovery\n\n**This roadmap is evolving - help us shape the future of privacy-preserving AI finance!**`,
+          isHtml: true
+        };
     }
   };
 
@@ -498,6 +485,95 @@ const BGINMultiAgentInterface = () => {
     </div>
   );
 
+  const IntegrationRoadmapPanel = () => (
+    <div className="bg-slate-800/50 backdrop-blur border border-blue-400/30 rounded-lg p-4 mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <Network className="w-5 h-5" />
+          Block 13 Integration Roadmap
+        </h3>
+        <button
+          onClick={() => setShowIntegrationRoadmap(!showIntegrationRoadmap)}
+          className="p-2 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
+        >
+          {showIntegrationRoadmap ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
+      </div>
+      
+      {showIntegrationRoadmap && (
+        <div className="grid grid-cols-2 gap-4">
+          {/* Kwaai Integration */}
+          <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-3 h-3 rounded-full ${integrationStatus.kwaai.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+              <h4 className="font-semibold text-white">Kwaai Privacy Platform</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">Privacy-preserving analytics and insights</p>
+            <div className="space-y-1">
+              {integrationStatus.kwaai.features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
+                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* FPP Integration */}
+          <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-3 h-3 rounded-full ${integrationStatus.fpp.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+              <h4 className="font-semibold text-white">First Person Project</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">Data sovereignty and dignity-based economics</p>
+            <div className="space-y-1">
+              {integrationStatus.fpp.features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
+                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ToIP Integration */}
+          <div className="bg-gradient-to-r from-green-600/20 to-teal-600/20 border border-green-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-3 h-3 rounded-full ${integrationStatus.toip.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+              <h4 className="font-semibold text-white">Trust over IP</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">DID management and verifiable credentials</p>
+            <div className="space-y-1">
+              {integrationStatus.toip.features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
+                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Privacy Pools Integration */}
+          <div className="bg-gradient-to-r from-orange-600/20 to-red-600/20 border border-orange-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-3 h-3 rounded-full ${integrationStatus.privacyPools.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+              <h4 className="font-semibold text-white">Privacy Pools</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">ASP eligibility and research rewards</p>
+            <div className="space-y-1">
+              {integrationStatus.privacyPools.features.map((feature, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs text-slate-400">
+                  <CheckCircle className="w-3 h-3 text-green-400" />
+                  <span>{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const PrivacyStatusBar = () => (
     <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-3">
       <div className="flex items-center justify-between">
@@ -570,7 +646,7 @@ const BGINMultiAgentInterface = () => {
             </div>
             
             <div className="space-y-2">
-              {currentAgent.capabilities.map((capability, index) => (
+              {currentAgent.capabilities.map((capability: string, index: number) => (
                 <div key={index} className="flex items-center gap-2 p-2 bg-slate-700/20 rounded text-sm">
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-300">{capability}</span>
@@ -597,6 +673,7 @@ const BGINMultiAgentInterface = () => {
       <div className="flex-1 flex flex-col">
         <PrivacyStatusBar />
         <AgentStatusBar />
+        <IntegrationRoadmapPanel />
         
         {/* Agent Header */}
         <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-4">
@@ -659,7 +736,7 @@ const BGINMultiAgentInterface = () => {
 
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {currentMessages.map((message) => (
+          {currentMessages.map((message: any) => (
             <div
               key={message.id}
               className={`flex gap-4 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -694,8 +771,19 @@ const BGINMultiAgentInterface = () => {
                     ? 'bg-gradient-to-r from-indigo-600/80 to-purple-600/80 text-white border-indigo-400/30'
                     : 'bg-slate-700/50 text-slate-100 border-blue-400/20'
                 }`}>
-                  <div className="text-sm leading-relaxed whitespace-pre-line mb-3">
-                    {message.content}
+                  <div className="text-sm leading-relaxed mb-3">
+                    {message.isHtml ? (
+                      <div 
+                        dangerouslySetInnerHTML={{ 
+                          __html: formatMessage(message.content) 
+                        }} 
+                        className="prose prose-invert prose-sm max-w-none"
+                      />
+                    ) : (
+                      <div className="whitespace-pre-line">
+                        {message.content}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center justify-between text-xs">
