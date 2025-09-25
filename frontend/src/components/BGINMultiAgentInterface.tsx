@@ -82,7 +82,10 @@ const BGINMultiAgentInterface = () => {
       // FPP Integration
       dataSovereignty: { userControlled: true, consentLevel: 'selective', privacyFirst: true },
       dignityMetrics: { userAgency: 0, transparency: 0, communityValue: 0, respect: 0 },
-      fppCompliance: { dataSovereignty: true, dignityBased: true, privacyByDesign: true, transparent: true }
+      fppCompliance: { dataSovereignty: true, dignityBased: true, privacyByDesign: true, transparent: true },
+      // Privacy Pools Integration
+      aspEligibility: { eligible: false, trustScore: 0, contributionCount: 0, complianceStatus: 'pending' },
+      privacyPoolAccess: { depositLimit: 0, withdrawalPrivacy: 'low', priorityProcessing: false, feeReduction: 0 }
     },
     codex: {
       id: 'codex',
@@ -105,7 +108,10 @@ const BGINMultiAgentInterface = () => {
       // FPP Integration
       dataSovereignty: { userControlled: true, consentLevel: 'selective', privacyFirst: true },
       dignityMetrics: { userAgency: 0, transparency: 0, communityValue: 0, respect: 0 },
-      fppCompliance: { dataSovereignty: true, dignityBased: true, privacyByDesign: true, transparent: true }
+      fppCompliance: { dataSovereignty: true, dignityBased: true, privacyByDesign: true, transparent: true },
+      // Privacy Pools Integration
+      aspEligibility: { eligible: false, trustScore: 0, contributionCount: 0, complianceStatus: 'pending' },
+      privacyPoolAccess: { depositLimit: 0, withdrawalPrivacy: 'low', priorityProcessing: false, feeReduction: 0 }
     },
     discourse: {
       id: 'discourse',
@@ -128,7 +134,10 @@ const BGINMultiAgentInterface = () => {
       // FPP Integration
       dataSovereignty: { userControlled: true, consentLevel: 'selective', privacyFirst: true },
       dignityMetrics: { userAgency: 0, transparency: 0, communityValue: 0, respect: 0 },
-      fppCompliance: { dataSovereignty: true, dignityBased: true, privacyByDesign: true, transparent: true }
+      fppCompliance: { dataSovereignty: true, dignityBased: true, privacyByDesign: true, transparent: true },
+      // Privacy Pools Integration
+      aspEligibility: { eligible: false, trustScore: 0, contributionCount: 0, complianceStatus: 'pending' },
+      privacyPoolAccess: { depositLimit: 0, withdrawalPrivacy: 'low', priorityProcessing: false, feeReduction: 0 }
     }
   };
 
@@ -306,7 +315,7 @@ const BGINMultiAgentInterface = () => {
     
     switch (agentType) {
       case 'archive':
-        return `**Archive Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Knowledge Base**: ${currentSessionAgent.knowledgeBase}\n**Documents Available**: ${currentSessionAgent.documents}\n\n**Current Capabilities**:\n• Document analysis and processing\n• Knowledge synthesis and correlation\n• Cross-session research discovery\n• RAG (Retrieval Augmented Generation) queries\n\n**ToIP Framework Integration**:\n• **DID Creation**: Ready to create decentralized identifier\n• **Capability Credentials**: Ready for verifiable credential issuance\n• **Trust Relationships**: Ready to establish trust with other agents\n• **Privacy Controls**: Ready for selective disclosure protocols\n\n**FPP Integration**:\n• **Data Sovereignty**: User-controlled research data and privacy-preserving protocols\n• **Dignity-Based**: Respects user agency and transparent data use\n• **Privacy by Design**: Built-in privacy controls and selective disclosure\n• **User Benefit**: Focuses on user empowerment and community value\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier using ToIP standards\n2. **FPP Compliance** - Implement data sovereignty and dignity-based principles\n3. **Issue Capability Credentials** - Create verifiable credentials for research capabilities\n4. **Set up Privacy Controls** - Implement FPP-compliant selective disclosure\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md and FPP_INTEGRATION.md\n\n**Ready for**: ToIP + FPP framework deployment and knowledge base population`;
+        return `**Archive Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Knowledge Base**: ${currentSessionAgent.knowledgeBase}\n**Documents Available**: ${currentSessionAgent.documents}\n\n**Current Capabilities**:\n• Document analysis and processing\n• Knowledge synthesis and correlation\n• Cross-session research discovery\n• RAG (Retrieval Augmented Generation) queries\n\n**ToIP Framework Integration**:\n• **DID Creation**: Ready to create decentralized identifier\n• **Capability Credentials**: Ready for verifiable credential issuance\n• **Trust Relationships**: Ready to establish trust with other agents\n• **Privacy Controls**: Ready for selective disclosure protocols\n\n**FPP Integration**:\n• **Data Sovereignty**: User-controlled research data and privacy-preserving protocols\n• **Dignity-Based**: Respects user agency and transparent data use\n• **Privacy by Design**: Built-in privacy controls and selective disclosure\n• **User Benefit**: Focuses on user empowerment and community value\n\n**Privacy Pools Integration**:\n• **ASP Eligibility**: Ready to serve as Association Set Provider for privacy pools\n• **Trust-Based Approval**: Deposit approval based on research contributions and trust scores\n• **Economic Incentives**: Financial rewards for quality research contributions\n• **Privacy-Preserving**: Zero-knowledge proofs for private transactions\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier using ToIP standards\n2. **FPP Compliance** - Implement data sovereignty and dignity-based principles\n3. **Privacy Pools ASP** - Set up Association Set Provider for deposit approval\n4. **Issue Capability Credentials** - Create verifiable credentials for research capabilities\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md, FPP_INTEGRATION.md, and PRIVACY_POOLS_INTEGRATION.md\n\n**Ready for**: ToIP + FPP + Privacy Pools framework deployment and knowledge base population`;
         
       case 'codex':
         return `**Codex Agent Response**\n\n**Status**: ${agent.status}\n**DID**: ${agent.did || 'Not yet created'}\n**Trust Score**: ${agent.trustScore}\n**Dignity Score**: ${agent.dignityMetrics?.respect || 0}\n**Policy Domains**: ${currentSessionAgent.policyDomains.length > 0 ? currentSessionAgent.policyDomains.join(', ') : 'None configured'}\n**Frameworks Available**: ${currentSessionAgent.frameworks}\n\n**Current Capabilities**:\n• Policy analysis and compliance checking\n• Standards development and management\n• Governance modeling and assessment\n• Multi-jurisdictional impact analysis\n\n**ToIP Framework Integration**:\n• **Governance Layer**: Ready to implement ToIP governance policies\n• **Credential Verification**: Ready for policy analysis credential verification\n• **Trust Protocols**: Ready for consensus building with other agents\n• **Privacy Compliance**: Ready for privacy-preserving policy analysis\n\n**FPP Integration**:\n• **Dignity-Based Governance**: Policies that respect human dignity and agency\n• **User-Centric Analysis**: Policy analysis focused on user benefit\n• **Transparent Processes**: Open and accountable policy development\n• **Privacy-First Compliance**: Privacy-preserving policy compliance checking\n\n**Implementation Steps**:\n1. **Create Agent DID** - Generate decentralized identifier for policy agent\n2. **FPP Compliance** - Implement dignity-based governance principles\n3. **Issue Policy Credentials** - Create verifiable credentials for policy analysis capabilities\n4. **Set up Governance Policies** - Implement ToIP + FPP compliant governance rules\n\n**Implementation**: Follow TOIP_AGENT_FRAMEWORK.md and FPP_INTEGRATION.md\n\n**Ready for**: ToIP + FPP framework deployment and policy framework loading`;

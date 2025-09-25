@@ -8,9 +8,9 @@ OVERVIEW
 ========
 The BGIN AI MVP is a multi-agent privacy-preserving research platform designed for blockchain governance. The system features three specialized agents (Archive, Codex, Discourse) that work together to facilitate research, policy analysis, and community collaboration while maintaining strict privacy controls.
 
-TRUST OVER IP (TOIP) + FIRST PERSON PROJECT (FPP) INTEGRATION
-=============================================================
-The system implements both the Trust over IP (ToIP) framework (https://trustoverip.org/wp-content/toip-model/) and First Person Project (FPP) principles (https://static1.squarespace.com/static/6834ee7c55c6376908871a6d/t/68cc3a8c99a9e21f398ea782/1758214796847/The+First+Person+Project+White+Paper+V1.0.pdf) to create a trusted, interoperable, and dignity-based ecosystem for agent interactions. This includes:
+TRUST OVER IP (TOIP) + FIRST PERSON PROJECT (FPP) + PRIVACY POOLS INTEGRATION
+=============================================================================
+The system implements the Trust over IP (ToIP) framework (https://trustoverip.org/wp-content/toip-model/), First Person Project (FPP) principles (https://static1.squarespace.com/static/6834ee7c55c6376908871a6d/t/68cc3a8c99a9e21f398ea782/1758214796847/The+First+Person+Project+White+Paper+V1.0.pdf), and Privacy Pools (https://docs.privacypools.com/) to create a trusted, interoperable, dignity-based, and economically sustainable ecosystem for agent interactions. This includes:
 
 ToIP Framework:
 - Decentralized Identifiers (DIDs) for each agent
@@ -24,6 +24,13 @@ FPP Principles:
 - Dignity-based economics and reputation systems
 - Privacy by design and selective disclosure
 - User agency preservation and transparent governance
+
+Privacy Pools Integration:
+- Association Set Provider (ASP) for privacy pool compliance
+- Trust-based deposit approval system
+- Economic incentives for research contributions
+- Privacy-preserving financial transactions
+- Zero-knowledge proof integration
 
 CURRENT STATE
 =============

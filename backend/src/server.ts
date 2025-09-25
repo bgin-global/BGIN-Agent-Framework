@@ -23,6 +23,7 @@ import synthesisRoutes from './routes/synthesis';
 import trustRoutes from './routes/trust';
 import healthRoutes from './routes/health';
 import toipRoutes from './routes/toip';
+import privacyPoolsRoutes from './routes/privacy-pools';
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler';
@@ -107,6 +108,9 @@ class BGINServer {
     
     // ToIP routes (public for agent registration)
     this.app.use('/api/toip', toipRoutes);
+    
+    // Privacy Pools routes (public for ASP functionality)
+    this.app.use('/api/privacy-pools', privacyPoolsRoutes);
     
     // Protected routes
     this.app.use('/api/agents/archive', authMiddleware, archiveRoutes);
