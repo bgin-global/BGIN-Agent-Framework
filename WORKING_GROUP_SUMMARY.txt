@@ -2,7 +2,7 @@ BGIN AI MVP - Working Group Summary
 =====================================
 
 PROJECT STATUS: Ready for Block 13 Meeting Deployment
-Last Updated: January 2024
+Last Updated: September 2025
 
 OVERVIEW
 ========
