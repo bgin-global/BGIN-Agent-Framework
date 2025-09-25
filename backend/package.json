@@ -45,6 +45,7 @@
     "multer": "^1.4.5-lts.1",
     "openai": "^4.8.0",
     "@anthropic-ai/sdk": "^0.6.3",
+    "@qdrant/js-client-rest": "^1.7.0",
     "uuid": "^9.0.0",
     "nanoid": "^4.0.2",
     "node-cron": "^3.0.2"

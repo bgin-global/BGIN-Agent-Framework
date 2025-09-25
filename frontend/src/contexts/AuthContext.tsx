@@ -41,30 +41,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Check for existing session
     const token = localStorage.getItem('auth_token');
     if (token) {
-      // Validate token and set user
-      setUser({
-        id: '1',
-        email: 'demo@bgin.org',
-        name: 'Demo User',
-        role: 'participant'
-      });
+      // TODO: Implement proper token validation
+      // For now, user remains null until proper authentication
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, _password: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock login for MVP
-      const mockUser: User = {
-        id: '1',
-        email,
-        name: 'Demo User',
-        role: 'participant'
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('auth_token', 'mock-token');
+      // TODO: Implement proper authentication with backend
+      // This should call the actual login API endpoint
+      throw new Error('Authentication not yet implemented');
     } catch (error) {
       throw new Error('Login failed');
     } finally {

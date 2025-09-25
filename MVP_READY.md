@@ -185,17 +185,31 @@ docker-compose logs -f frontend
 - Privacy-preserving data handling
 - Audit logging
 
-## 🚀 Next Steps
+## 🚀 Next Steps for Block 13 Meeting
 
-1. **Deploy the MVP** using one of the deployment options
-2. **Test all features** using the provided health checks
-3. **Configure external services** (AI APIs, Discourse, etc.)
-4. **Set up monitoring** and alerting
-5. **Plan scaling strategy** for production use
+### Immediate Actions (Pre-Meeting)
+1. **Deploy the MVP** using Docker Compose (see BLOCK_13_DEPLOYMENT_GUIDE.md)
+2. **Configure essential APIs** (Database, Redis, Vector DB)
+3. **Test demo scenarios** to ensure smooth presentation
+4. **Prepare backup plans** for any technical issues
+
+### Data Population (Post-Meeting)
+1. **Follow OPERATIONAL_DATA_GUIDE.md** to populate with real data
+2. **Connect to BGIN member database** for user authentication
+3. **Load knowledge base** and policy frameworks
+4. **Set up real-time data feeds** for live functionality
+
+### Enhanced Features (Future)
+1. **Integrate AI/LLM services** (Anthropic, OpenAI)
+2. **Connect to Discourse forum** for community features
+3. **Implement Kwaai privacy platform** for advanced privacy
+4. **Set up monitoring and analytics** for production use
 
 ## 📚 Documentation
 
-- `DEPLOYMENT_GUIDE.md` - Detailed deployment instructions
+- `BLOCK_13_DEPLOYMENT_GUIDE.md` - Complete deployment guide for Block 13 meeting
+- `OPERATIONAL_DATA_GUIDE.md` - How to populate system with real data
+- `DEPLOYMENT_GUIDE.md` - General deployment instructions
 - `README.md` - Project overview and setup
 - Code comments - API documentation
 - Database schema - `database/init-db.sql`

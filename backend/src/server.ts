@@ -32,6 +32,15 @@ import { authMiddleware } from './middleware/auth';
 import { AgentCoordinator } from './agents/coordination/agent-router';
 import { SocketManager } from './services/socket-manager';
 
+// Integration imports
+import { qdrantClient } from './integrations/vector-db/qdrant-client';
+import { llmClient } from './integrations/llm/llm-client';
+import { discourseClient } from './integrations/discourse-api/discourse-client';
+import { kwaaiClient } from './integrations/kwaai/kwaai-client';
+
+// Monitoring imports
+import { dataMonitor } from './monitoring/data-monitor';
+
 class BGINServer {
   private app: express.Application;
   private server: any;
@@ -118,9 +127,16 @@ class BGINServer {
       await database.initialize();
       logger.info('Database connected successfully');
 
+      // Initialize integrations
+      await this.initializeIntegrations();
+
       // Initialize agent coordinator
       await this.agentCoordinator.initialize();
       logger.info('Agent coordinator initialized');
+
+      // Start monitoring
+      await dataMonitor.startMonitoring(30000); // 30 second intervals
+      logger.info('Data monitoring started');
 
       // Start server
       const port = config.port || 4000;
@@ -128,6 +144,8 @@ class BGINServer {
         logger.info(`🚀 BGIN GovHack MVP server running on port ${port}`);
         logger.info(`Environment: ${config.nodeEnv}`);
         logger.info(`Multi-agent mode: ${config.multiAgentMode ? 'enabled' : 'disabled'}`);
+        logger.info(`Enhanced RAG system: enabled`);
+        logger.info(`Real-time monitoring: enabled`);
       });
     } catch (error) {
       logger.error('Failed to start server:', error);
@@ -135,8 +153,36 @@ class BGINServer {
     }
   }
 
+  private async initializeIntegrations() {
+    try {
+      // Initialize Qdrant vector database
+      await qdrantClient.initialize();
+      logger.info('Qdrant vector database connected');
+
+      // Initialize LLM client
+      const llmHealth = await llmClient.healthCheck();
+      logger.info(`LLM services: ${Object.entries(llmHealth).map(([k, v]) => `${k}: ${v ? 'OK' : 'FAIL'}`).join(', ')}`);
+
+      // Initialize Discourse client
+      await discourseClient.initialize();
+      logger.info('Discourse API connected');
+
+      // Initialize Kwaai client
+      await kwaaiClient.initialize();
+      logger.info('Kwaai integration initialized');
+
+    } catch (error) {
+      logger.error('Integration initialization failed:', error);
+      // Don't fail server startup for integration issues
+    }
+  }
+
   public async shutdown() {
     logger.info('Shutting down server...');
+    
+    // Stop monitoring
+    await dataMonitor.stopMonitoring();
+    logger.info('Data monitoring stopped');
     
     if (this.server) {
       this.server.close();

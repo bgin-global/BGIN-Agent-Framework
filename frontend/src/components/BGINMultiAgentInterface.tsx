@@ -24,25 +24,25 @@ const BGINMultiAgentInterface = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [showLexicon, setShowLexicon] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [activeUsers, setActiveUsers] = useState(['Dr. Sarah Chen', 'Alex Kumar', 'Maria Santos', 'Jin Watanabe', 'Emma Rodriguez']);
+  const [activeUsers, setActiveUsers] = useState([]);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [multiAgentMode, setMultiAgentMode] = useState(false);
   const [privacyLevel, setPrivacyLevel] = useState('selective');
-  const [kwaaiConnected, setKwaaiConnected] = useState(true);
-  const [fpProjectConnected, setFpProjectConnected] = useState(true);
-  const [userDID, setUserDID] = useState('did:bgin:researcher:0x1234');
-  const [reputationScore, setReputationScore] = useState(847);
-  const [trustRelationships, setTrustRelationships] = useState(12);
+  const [kwaaiConnected, setKwaaiConnected] = useState(false);
+  const [fpProjectConnected, setFpProjectConnected] = useState(false);
+  const [userDID, setUserDID] = useState('');
+  const [reputationScore, setReputationScore] = useState(0);
+  const [trustRelationships, setTrustRelationships] = useState(0);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showTrustNetwork, setShowTrustNetwork] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [notifications, setNotifications] = useState(3);
+  const [notifications, setNotifications] = useState(0);
   const [activeView, setActiveView] = useState('chat');
-  const [crossSessionInsights, setCrossSessionInsights] = useState(8);
-  const [consensusItems, setConsensusItems] = useState(4);
+  const [crossSessionInsights, setCrossSessionInsights] = useState(0);
+  const [consensusItems, setConsensusItems] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showModelConfig, setShowModelConfig] = useState(false);
   const [showConversationHistory, setShowConversationHistory] = useState(false);
@@ -69,10 +69,10 @@ const BGINMultiAgentInterface = () => {
       icon: Archive,
       capabilities: ['Document Analysis', 'Knowledge Synthesis', 'Cross-Session Search', 'Research Correlation'],
       primaryFunction: 'Research and knowledge management',
-      status: 'active',
-      lastResponse: '2s ago',
-      performance: { accuracy: 94, speed: 1.2, correlations: 156 },
-      recentActivity: 'Processing regulatory compliance documents'
+      status: 'inactive',
+      lastResponse: 'Never',
+      performance: { accuracy: 0, speed: 0, correlations: 0 },
+      recentActivity: 'Agent not yet initialized'
     },
     codex: {
       id: 'codex',
@@ -82,10 +82,10 @@ const BGINMultiAgentInterface = () => {
       icon: Scale,
       capabilities: ['Policy Analysis', 'Standards Development', 'Compliance Check', 'Impact Assessment'],
       primaryFunction: 'Policy framework and governance modeling',
-      status: 'active',
-      lastResponse: '5s ago',
-      performance: { accuracy: 91, speed: 0.8, frameworks: 89 },
-      recentActivity: 'Analyzing cross-border compliance requirements'
+      status: 'inactive',
+      lastResponse: 'Never',
+      performance: { accuracy: 0, speed: 0, frameworks: 0 },
+      recentActivity: 'Agent not yet initialized'
     },
     discourse: {
       id: 'discourse',
@@ -95,65 +95,65 @@ const BGINMultiAgentInterface = () => {
       icon: MessageCircle,
       capabilities: ['Forum Integration', 'Consensus Building', 'Community Management', 'Discussion Facilitation'],
       primaryFunction: 'Community engagement and collaboration',
-      status: 'active',
-      lastResponse: '1s ago',
-      performance: { accuracy: 88, speed: 2.1, consensus: 76 },
-      recentActivity: 'Facilitating consensus on privacy standards'
+      status: 'inactive',
+      lastResponse: 'Never',
+      performance: { accuracy: 0, speed: 0, consensus: 0 },
+      recentActivity: 'Agent not yet initialized'
     }
   };
 
-  // Enhanced Block 13 Session Configuration
+  // Session Configuration - Ready for Block 13
   const sessions = {
     keynote: {
       id: 'keynote',
       name: 'Opening Keynote',
       description: 'Strategic governance frameworks',
-      status: 'live',
-      participants: 189,
-      trending: true,
+      status: 'planning',
+      participants: 0,
+      trending: false,
       agents: {
-        archive: { knowledgeBase: 'Strategic documents + BGIN history', documents: 1247, correlations: 34 },
-        codex: { policyDomains: ['blockchain_governance', 'multi_stakeholder'], frameworks: 23, assessments: 12 },
-        discourse: { activeThreads: 8, consensusItems: 4, engagementRate: 87 }
+        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        codex: { policyDomains: [], frameworks: 0, assessments: 0 },
+        discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
     technical: {
       id: 'technical',
       name: 'Technical Standards',
       description: 'Protocol development and standardization',
-      status: 'active',
-      participants: 123,
+      status: 'planning',
+      participants: 0,
       trending: false,
       agents: {
-        archive: { knowledgeBase: 'Technical specs + implementation guides', documents: 892, correlations: 28 },
-        codex: { policyDomains: ['technical_standards', 'interoperability'], frameworks: 31, assessments: 18 },
-        discourse: { activeThreads: 12, consensusItems: 7, engagementRate: 72 }
+        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        codex: { policyDomains: [], frameworks: 0, assessments: 0 },
+        discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
     regulatory: {
       id: 'regulatory',
       name: 'Regulatory Landscape',
       description: 'Policy analysis and compliance frameworks',
-      status: 'active',
-      participants: 156,
-      trending: true,
+      status: 'planning',
+      participants: 0,
+      trending: false,
       agents: {
-        archive: { knowledgeBase: 'Regulatory docs + policy analysis', documents: 2341, correlations: 67 },
-        codex: { policyDomains: ['financial_regulation', 'data_protection'], frameworks: 45, assessments: 34 },
-        discourse: { activeThreads: 15, consensusItems: 9, engagementRate: 91 }
+        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        codex: { policyDomains: [], frameworks: 0, assessments: 0 },
+        discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
     privacy: {
       id: 'privacy',
       name: 'Privacy & Digital Rights',
       description: 'Privacy preservation and rights advocacy',
-      status: 'upcoming',
-      participants: 87,
-      trending: true,
+      status: 'planning',
+      participants: 0,
+      trending: false,
       agents: {
-        archive: { knowledgeBase: 'Privacy research + rights frameworks', documents: 1156, correlations: 42 },
-        codex: { policyDomains: ['data_rights', 'privacy_tech'], frameworks: 18, assessments: 9 },
-        discourse: { activeThreads: 6, consensusItems: 3, engagementRate: 68 }
+        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        codex: { policyDomains: [], frameworks: 0, assessments: 0 },
+        discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
     governance: {
@@ -161,12 +161,12 @@ const BGINMultiAgentInterface = () => {
       name: 'Cross-Chain Governance',
       description: 'Multi-chain governance mechanisms',
       status: 'planning',
-      participants: 98,
+      participants: 0,
       trending: false,
       agents: {
-        archive: { knowledgeBase: 'Governance models + consensus mechanisms', documents: 743, correlations: 19 },
-        codex: { policyDomains: ['cross_chain', 'dao_governance'], frameworks: 27, assessments: 15 },
-        discourse: { activeThreads: 4, consensusItems: 2, engagementRate: 54 }
+        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        codex: { policyDomains: [], frameworks: 0, assessments: 0 },
+        discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     }
   };
@@ -175,13 +175,8 @@ const BGINMultiAgentInterface = () => {
   const currentSession = sessions[selectedSession];
   const currentSessionAgent = currentSession.agents[selectedAgent];
 
-  // Trust network data
-  const trustNetwork = [
-    { id: 'researcher_001', name: 'Anonymous Researcher 1', strength: 0.85, interactions: 24, domains: ['regulatory', 'privacy'] },
-    { id: 'researcher_002', name: 'Anonymous Researcher 2', strength: 0.72, interactions: 18, domains: ['technical', 'governance'] },
-    { id: 'researcher_003', name: 'Anonymous Researcher 3', strength: 0.91, interactions: 31, domains: ['regulatory', 'technical'] },
-    { id: 'researcher_004', name: 'Anonymous Researcher 4', strength: 0.68, interactions: 15, domains: ['privacy', 'governance'] }
-  ];
+  // Trust network data - will be populated when users connect
+  const trustNetwork = [];
 
   // Open WebUI-inspired model configuration
   const availableModels = [
@@ -195,14 +190,8 @@ const BGINMultiAgentInterface = () => {
     { id: 'anthropic-claude', name: 'Claude 3', provider: 'Anthropic', type: 'general', status: 'connected' }
   ];
 
-  // Conversation history data
-  const conversationHistoryData = [
-    { id: 'conv_001', title: 'Regulatory Compliance Analysis', timestamp: '2024-01-15 14:30', agent: 'archive', session: 'regulatory', messageCount: 24 },
-    { id: 'conv_002', title: 'Cross-Chain Governance Discussion', timestamp: '2024-01-15 12:15', agent: 'discourse', session: 'governance', messageCount: 18 },
-    { id: 'conv_003', title: 'Privacy Standards Development', timestamp: '2024-01-15 10:45', agent: 'codex', session: 'privacy', messageCount: 31 },
-    { id: 'conv_004', title: 'Technical Standards Review', timestamp: '2024-01-14 16:20', agent: 'archive', session: 'technical', messageCount: 15 },
-    { id: 'conv_005', title: 'Multi-Agent Collaboration', timestamp: '2024-01-14 14:10', agent: 'multi', session: 'keynote', messageCount: 42 }
-  ];
+  // Conversation history data - will be populated as users interact
+  const conversationHistoryData = [];
 
   // Initialize messages for each agent-session combination
   useEffect(() => {
@@ -217,7 +206,7 @@ const BGINMultiAgentInterface = () => {
           {
             id: 1,
             type: 'assistant',
-            content: `**${agent.name} Ready** - ${session.name}\n\n**Specialization**: ${agent.description}\n**Primary Function**: ${agent.primaryFunction}\n\n**Current Capabilities**:\n${agent.capabilities.map(cap => `• ${cap}`).join('\n')}\n\n**Session Context**: ${session.description}\n**Active Participants**: ${session.participants} researchers\n**Performance**: ${agent.performance.accuracy}% accuracy, ${agent.performance.speed}s avg response\n\nI'm ready to assist with ${agent.primaryFunction.toLowerCase()} for the ${session.name} session. How can I help you today?`,
+            content: `**${agent.name} Ready for Configuration** - ${session.name}\n\n**Status**: ${agent.status}\n**Specialization**: ${agent.description}\n**Primary Function**: ${agent.primaryFunction}\n\n**Current Capabilities**:\n${agent.capabilities.map(cap => `• ${cap}`).join('\n')}\n\n**Session Context**: ${session.description}\n\n**Data Population Required**:\n• Connect to external APIs and services\n• Load knowledge base and policy frameworks\n• Configure real-time data feeds\n• Set up user authentication and trust networks\n\n**See OPERATIONAL_DATA_GUIDE.md for detailed implementation steps**`,
             timestamp: new Date().toLocaleTimeString(),
             author: agent.name,
             agentType: agentId,
@@ -282,21 +271,21 @@ const BGINMultiAgentInterface = () => {
     const session = sessions[sessionId];
     
     if (isMultiAgent) {
-      return `**Multi-Agent Collaboration Response**\n\n**Archive Agent Contribution:**\n• Found ${Math.floor(Math.random() * 50) + 10} relevant documents\n• Identified ${Math.floor(Math.random() * 8) + 3} cross-session correlations\n• Synthesized insights from ${Math.floor(Math.random() * 5) + 2} knowledge domains\n\n**Codex Agent Analysis:**\n• Analyzed ${Math.floor(Math.random() * 12) + 5} policy frameworks\n• Generated ${Math.floor(Math.random() * 6) + 2} compliance recommendations\n• Assessed impact across ${Math.floor(Math.random() * 4) + 2} jurisdictions\n\n**Discourse Agent Facilitation:**\n• Engaged ${Math.floor(Math.random() * 20) + 8} community members\n• Facilitated ${Math.floor(Math.random() * 4) + 1} consensus discussions\n• Identified ${Math.floor(Math.random() * 3) + 1} trust relationship opportunities\n\n**Synthesized Recommendation:** All three agents collaborated to provide comprehensive analysis combining research evidence, policy implications, and community input. Confidence level: ${Math.floor(Math.random() * 20) + 80}%`;
+      return `**Multi-Agent Collaboration Response**\n\n**Status**: System ready for data population\n\n**Archive Agent**: Ready to process documents once knowledge base is loaded\n**Codex Agent**: Ready to analyze policies once frameworks are configured\n**Discourse Agent**: Ready to facilitate discussions once community platform is connected\n\n**Data Population Process**:\n1. **User Authentication**: Connect to BGIN member database\n2. **Knowledge Base**: Load research documents and policy frameworks\n3. **Community Integration**: Connect to Discourse forum and messaging\n4. **Privacy Services**: Integrate Kwaai for privacy-preserving features\n5. **Trust Network**: Initialize reputation and trust relationship systems\n\n**Implementation Guide**: See OPERATIONAL_DATA_GUIDE.md for detailed steps\n\n**Current Status**: All agents initialized and ready for external service configuration.`;
     }
     
     switch (agentType) {
       case 'archive':
-        return `**Archive Agent Response**\n\n*Analyzing knowledge base: ${currentSessionAgent.knowledgeBase}*\n\n**Research Findings:**\n• Searched ${currentSessionAgent.documents} documents\n• Found ${Math.floor(Math.random() * 15) + 5} highly relevant matches\n• Discovered ${Math.floor(Math.random() * 6) + 2} cross-session insights\n• Correlation confidence: ${Math.floor(Math.random() * 20) + 80}%\n\n**Knowledge Synthesis:** Based on the document analysis, I've identified key patterns with ${currentSessionAgent.correlations} existing correlations. Would you like me to:\n\n1. Generate research summary with citations\n2. Find cross-session correlations\n3. Create annotated bibliography\n4. Collaborate with Codex agent for policy implications\n\n**Privacy Note:** All sources anonymized per ${privacyLevel} privacy setting.`;
+        return `**Archive Agent Response**\n\n**Status**: ${agent.status}\n**Knowledge Base**: ${currentSessionAgent.knowledgeBase}\n**Documents Available**: ${currentSessionAgent.documents}\n\n**Current Capabilities**:\n• Document analysis and processing\n• Knowledge synthesis and correlation\n• Cross-session research discovery\n• RAG (Retrieval Augmented Generation) queries\n\n**Data Population Steps**:\n1. **Connect to BGIN Research Repository** - Import existing research documents\n2. **Set up Vector Database** - Configure Qdrant for document embeddings\n3. **Load Policy Documents** - Import regulatory and policy frameworks\n4. **Configure Search Pipeline** - Set up document processing and indexing\n\n**Implementation**: Follow OPERATIONAL_DATA_GUIDE.md Section 4.1\n\n**Ready for**: Document upload and knowledge base population`;
         
       case 'codex':
-        return `**Codex Agent Response**\n\n*Analyzing policy frameworks: ${currentSessionAgent.policyDomains.join(', ')}*\n\n**Policy Analysis:**\n• Reviewed ${currentSessionAgent.frameworks} relevant frameworks\n• Identified ${Math.floor(Math.random() * 8) + 3} compliance considerations\n• Assessed impact across ${Math.floor(Math.random() * 5) + 2} jurisdictions\n• Stakeholder impact score: ${Math.floor(Math.random() * 30) + 70}%\n\n**Governance Recommendations:** Based on current policy landscape:\n\n1. Multi-stakeholder consultation process (${Math.floor(Math.random() * 20) + 80}% feasibility)\n2. Regulatory sandbox approach (${Math.floor(Math.random() * 25) + 75}% adoption likelihood)\n3. Cross-jurisdictional alignment strategy\n4. Stakeholder impact assessment\n\nShall I collaborate with Archive agent for supporting research or Discourse agent for community input?\n\n**Compliance Status:** All analysis maintains ${privacyLevel} disclosure level.`;
+        return `**Codex Agent Response**\n\n**Status**: ${agent.status}\n**Policy Domains**: ${currentSessionAgent.policyDomains.length > 0 ? currentSessionAgent.policyDomains.join(', ') : 'None configured'}\n**Frameworks Available**: ${currentSessionAgent.frameworks}\n\n**Current Capabilities**:\n• Policy analysis and compliance checking\n• Standards development and management\n• Governance modeling and assessment\n• Multi-jurisdictional impact analysis\n\n**Data Population Steps**:\n1. **Load Regulatory Frameworks** - Import multi-jurisdictional policy documents\n2. **Configure Compliance Rules** - Set up jurisdiction-specific analysis\n3. **Connect to Policy Database** - Link to external policy repositories\n4. **Set up Impact Assessment** - Configure stakeholder analysis tools\n\n**Implementation**: Follow OPERATIONAL_DATA_GUIDE.md Section 4.2\n\n**Ready for**: Policy framework loading and compliance rule configuration`;
         
       case 'discourse':
-        return `**Discourse Agent Response**\n\n*Managing community engagement: ${currentSessionAgent.activeThreads} active discussions*\n\n**Community Status:**\n• ${currentSessionAgent.activeThreads} active forum threads\n• ${currentSessionAgent.consensusItems} items seeking consensus\n• ${session.participants} total participants (${currentSessionAgent.engagementRate}% engagement rate)\n• ${trustRelationships} established trust relationships\n• Current consensus strength: ${Math.floor(Math.random() * 30) + 70}%\n\n**Facilitation Opportunities:**\n1. Create structured discussion thread (estimated ${Math.floor(Math.random() * 20) + 30} participants)\n2. Launch consensus-building poll (${Math.floor(Math.random() * 15) + 85}% completion expected)\n3. Facilitate multi-stakeholder dialogue\n4. Coordinate with other agents for informed discussion\n\n**Trust Network:** Ready to establish new relationships while maintaining ${privacyLevel} anonymity level.\n\nWould you like me to engage the Archive or Codex agents to provide research-backed or policy-informed discussion materials?`;
+        return `**Discourse Agent Response**\n\n**Status**: ${agent.status}\n**Active Threads**: ${currentSessionAgent.activeThreads}\n**Participants**: ${session.participants}\n**Engagement Rate**: ${currentSessionAgent.engagementRate}%\n\n**Current Capabilities**:\n• Community engagement and facilitation\n• Consensus building and polling\n• Discussion thread management\n• Trust relationship establishment\n\n**Data Population Steps**:\n1. **Connect to BGIN Discourse Forum** - Link to existing community platform\n2. **Import Discussion Threads** - Load existing conversations and topics\n3. **Set up Trust Network** - Initialize reputation and relationship systems\n4. **Configure Consensus Tools** - Set up polling and decision-making mechanisms\n\n**Implementation**: Follow OPERATIONAL_DATA_GUIDE.md Section 4.3\n\n**Ready for**: Community platform connection and discussion facilitation setup`;
         
       default:
-        return `**Agent Response**: Processing your request through ${agent.name} capabilities...`;
+        return `**Agent Response**: ${agent.name} is ${agent.status}. Please configure external service connections to activate full functionality.`;
     }
   };
 
