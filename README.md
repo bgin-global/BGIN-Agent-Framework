@@ -23,6 +23,7 @@ A privacy-preserving, multi-agent research platform for blockchain governance, i
   - Cryptoeconomic verification systems
 
 - **Discourse Agent** - Communications & Collaboration (Green theme)
+  - BGIN Discourse community integration ([bgin.discourse.group](https://bgin.discourse.group/))
   - Forum integration and community management
   - Consensus building and collaboration tools
   - Privacy-preserving communication channels
@@ -197,7 +198,7 @@ bgin-govhack-mvp/
 
 ### External Services
 - **Kwaai**: Privacy-preserving analytics and insights
-- **Discourse**: Community forum integration
+- **BGIN Discourse**: Community forum integration ([bgin.discourse.group](https://bgin.discourse.group/))
 - **OpenAI/Anthropic**: AI model integration
 - **Ollama**: Local AI model support
 - **BGIN Systems**: Blockchain governance integration
@@ -277,7 +278,8 @@ For support and questions:
 ## 🔗 References
 
 - [BGIN Agentic Framework Archive Codex](https://sync.soulbis.com/s/bgin-agentic-framework-archive-codex) - Comprehensive framework for sovereign AI agents
-- [BGIN Official Website](https://bgin.org) - Blockchain Governance Initiative Network
+- [BGIN Official Website](https://bgin-global.org/) - Blockchain Governance Initiative Network
+- [BGIN Discourse Community](https://bgin.discourse.group/) - BGIN Community Forum and Working Groups
 - [W3C DID Specification](https://www.w3.org/TR/did-core/) - Decentralized Identifiers
 - [Open WebUI](https://github.com/open-webui/open-webui) - Interface inspiration
 
