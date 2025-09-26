@@ -40,11 +40,11 @@ A privacy-preserving, multi-agent research platform for blockchain governance, i
   - **Privacy Pools**: Community-driven ASP qualification process
 
 ### 🏛️ Block 13 Sessions
-- **Opening Keynote** (Live - 189 participants)
-- **Technical Standards** (Active - 123 participants)
-- **Regulatory Landscape** (Active - 156 participants)
-- **Privacy & Digital Rights** (Upcoming - 87 participants)
-- **Cross-Chain Governance** (Planning - 98 participants)
+- **Opening Keynote** (Completed - 200+ participants)
+- **Technical Standards** (Active - 150+ participants)
+- **Regulatory Landscape** (Active - 180+ participants)
+- **Privacy & Digital Rights** (Upcoming - 120+ participants)
+- **Cross-Chain Governance** (Planning - 100+ participants)
 
 ### 🔒 Privacy & Trust Features
 - **DID-based Identity Management**: Decentralized identifier system
