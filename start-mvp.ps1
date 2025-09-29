@@ -83,7 +83,7 @@ switch ($choice) {
         Write-Host "`n⚠️  Manual deployment requires:" -ForegroundColor Yellow
         Write-Host "- PostgreSQL 15+ running on localhost:5432" -ForegroundColor White
         Write-Host "- Redis 7+ running on localhost:6379" -ForegroundColor White
-        Write-Host "- Database 'bgin_govhack' created" -ForegroundColor White
+        Write-Host "- Database 'bgin_mvp' created" -ForegroundColor White
         Write-Host "- Database initialized with init-db.sql" -ForegroundColor White
         
         $continue = Read-Host "`nContinue? (y/n)"

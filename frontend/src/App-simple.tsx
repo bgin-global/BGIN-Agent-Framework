@@ -43,7 +43,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white font-sans">
       <header className="container mx-auto px-4 py-6 flex justify-between items-center">
         <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
-          BGIN GovHack MVP
+          BGIN MVP
         </h1>
         <nav>
           <ul className="flex space-x-6">
@@ -151,7 +151,7 @@ function App() {
       </main>
 
       <footer className="container mx-auto px-4 py-8 text-center text-gray-500">
-        <p>&copy; 2025 BGIN GovHack MVP. Multi-Agent Privacy Research System.</p>
+        <p>&copy; 2025 BGIN MVP. Multi-Agent Privacy Research System.</p>
       </footer>
     </div>
   );

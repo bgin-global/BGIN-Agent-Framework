@@ -149,7 +149,7 @@ class BGINServer {
       // Start server
       const port = config.port || 4000;
       this.server.listen(port, () => {
-        logger.info(`🚀 BGIN GovHack MVP server running on port ${port}`);
+        logger.info(`🚀 BGIN MVP server running on port ${port}`);
         logger.info(`Environment: ${config.nodeEnv}`);
         logger.info(`Multi-agent mode: ${config.multiAgentMode ? 'enabled' : 'disabled'}`);
         logger.info(`Enhanced RAG system: enabled`);

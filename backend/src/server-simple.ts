@@ -124,7 +124,7 @@ class SimpleBGINServer {
       // Start server
       const port = config.port || 4000;
       this.app.listen(port, () => {
-        logger.info(`🚀 BGIN GovHack MVP server running on port ${port}`);
+        logger.info(`🚀 BGIN MVP server running on port ${port}`);
         logger.info(`Environment: ${config.nodeEnv}`);
         logger.info(`Mode: Simplified (no Docker)`);
         logger.info(`Frontend: http://localhost:3000`);

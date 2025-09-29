@@ -6,7 +6,7 @@ services:
     image: postgres:15-alpine
     container_name: bgin-postgres
     environment:
-      POSTGRES_DB: bgin_govhack
+      POSTGRES_DB: bgin_mvp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_HOST_AUTH_METHOD: trust
@@ -57,7 +57,7 @@ services:
     container_name: bgin-backend
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-password}@postgres:5432/bgin_govhack
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-password}@postgres:5432/bgin_mvp
       REDIS_URL: redis://:${REDIS_PASSWORD:-redispass}@redis:6379
       VECTOR_DB_URL: http://qdrant:6333
       JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
@@ -182,4 +182,4 @@ networks:
 # docker-compose --profile monitoring up  # Start with monitoring
 # docker-compose --profile mock-services up # Start with mock services
 # docker-compose logs -f backend          # Follow backend logs
-# docker-compose exec postgres psql -U postgres -d bgin_govhack # Connect to DB
+# docker-compose exec postgres psql -U postgres -d bgin_mvp # Connect to DB

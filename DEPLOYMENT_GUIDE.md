@@ -18,7 +18,7 @@
 1. **Clone and Setup**
    ```bash
    git clone <your-repo-url>
-   cd bgin-govhack-mvp
+   cd bgin-mvp
    cp env.example .env
    ```
 
@@ -26,7 +26,7 @@
    Edit `.env` file with your settings:
    ```env
    # Database Configuration
-   DATABASE_URL=postgresql://postgres:password@localhost:5432/bgin_govhack
+   DATABASE_URL=postgresql://postgres:password@localhost:5432/bgin_mvp
    REDIS_URL=redis://:redispass@localhost:6379
    VECTOR_DB_URL=http://localhost:6333
    
@@ -70,10 +70,10 @@
 2. **Setup Database**
    ```bash
    # Create PostgreSQL database
-   createdb bgin_govhack
+   createdb bgin_mvp
    
    # Run database initialization
-   psql -d bgin_govhack -f ../database/init-db.sql
+   psql -d bgin_mvp -f ../database/init-db.sql
    ```
 
 3. **Start Backend**
@@ -100,7 +100,7 @@
 
 ```env
 NODE_ENV=production
-DATABASE_URL=postgresql://user:password@db-host:5432/bgin_govhack
+DATABASE_URL=postgresql://user:password@db-host:5432/bgin_mvp
 REDIS_URL=redis://:password@redis-host:6379
 VECTOR_DB_URL=http://qdrant-host:6333
 

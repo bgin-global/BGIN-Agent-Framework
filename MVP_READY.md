@@ -125,7 +125,7 @@ docker-compose -f docker-compose.production.yml up -d
 ### Environment Variables
 ```env
 # Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/bgin_govhack
+DATABASE_URL=postgresql://postgres:password@localhost:5432/bgin_mvp
 REDIS_URL=redis://:redispass@localhost:6379
 VECTOR_DB_URL=http://localhost:6333
 

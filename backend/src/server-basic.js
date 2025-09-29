@@ -1,4 +1,4 @@
-// Basic server for BGIN GovHack MVP
+// Basic server for BGIN MVP
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -104,7 +104,7 @@ app.use('*', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 BGIN GovHack MVP server running on port ${PORT}`);
+  console.log(`🚀 BGIN MVP server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Mode: Basic (no Docker)`);
   console.log(`Frontend: http://localhost:3000`);

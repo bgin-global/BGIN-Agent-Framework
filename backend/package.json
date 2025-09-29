@@ -1,5 +1,5 @@
 {
-  "name": "@bgin-govhack/backend",
+  "name": "@bgin-mvp/backend",
   "version": "1.0.0",
   "description": "BGIN Multi-Agent Research Platform Backend",
   "main": "dist/server.js",

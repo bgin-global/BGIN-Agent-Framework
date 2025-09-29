@@ -22,7 +22,7 @@
 **Required Environment Variables**:
 ```env
 # Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/bgin_govhack
+DATABASE_URL=postgresql://username:password@localhost:5432/bgin_mvp
 REDIS_URL=redis://localhost:6379
 VECTOR_DB_URL=http://localhost:6333
 
@@ -48,7 +48,7 @@ ANONYMIZATION_LEVEL=high
 **PostgreSQL Database**:
 ```sql
 -- Create database
-CREATE DATABASE bgin_govhack;
+CREATE DATABASE bgin_mvp;
 
 -- Run initialization script
 \i database/init-db.sql
@@ -94,7 +94,7 @@ curl http://localhost:6333/collections
 **Quick Start**:
 ```bash
 # Clone and navigate to project
-cd bgin-govhack-mvp
+cd bgin-mvp
 
 # Copy environment file
 cp env.example .env
@@ -266,7 +266,7 @@ docker run -d -p 6333:6333 qdrant/qdrant
 sudo systemctl status postgresql
 
 # Check connection
-psql -h localhost -U username -d bgin_govhack
+psql -h localhost -U username -d bgin_mvp
 
 # Restart if needed
 sudo systemctl restart postgresql

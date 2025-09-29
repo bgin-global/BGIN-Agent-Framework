@@ -188,7 +188,7 @@ The system is now ready for:
 # Required
 ANTHROPIC_API_KEY=your_anthropic_key
 OPENAI_API_KEY=your_openai_key
-DATABASE_URL=postgresql://postgres:password@localhost:5432/bgin_govhack
+DATABASE_URL=postgresql://postgres:password@localhost:5432/bgin_mvp
 REDIS_URL=redis://localhost:6379
 VECTOR_DB_URL=http://localhost:6333
 

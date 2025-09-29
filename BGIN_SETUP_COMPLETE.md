@@ -1,4 +1,4 @@
-# 🎉 BGIN GovHack MVP - Setup Complete!
+# 🎉 BGIN MVP - Setup Complete!
 
 ## ✅ **What's Been Created**
 
@@ -6,7 +6,7 @@ Your BGIN Multi-Agent Privacy Research System is now ready! Here's what has been
 
 ### **📁 Project Structure**
 ```
-bgin-govhack-mvp/
+bgin-mvp/
 ├── 📄 README.md                    # Complete project documentation
 ├── 📄 package.json                 # Root workspace configuration
 ├── 📄 docker-compose.yml           # Multi-service orchestration
@@ -89,7 +89,7 @@ Complete PostgreSQL schema with:
 ### **2. Quick Start (Recommended)**
 ```bash
 # Navigate to project
-cd C:\Users\mitch\BGINAI\bgin-govhack-mvp
+cd C:\Users\mitch\BGINAI\bgin-mvp
 
 # Make scripts executable (Linux/Mac)
 chmod +x scripts/*.sh
@@ -163,7 +163,7 @@ curl http://localhost:4000/health
 ### **3. Verify Database**
 ```bash
 # Connect to PostgreSQL
-docker-compose exec postgres psql -U postgres -d bgin_govhack
+docker-compose exec postgres psql -U postgres -d bgin_mvp
 
 # Check sessions
 SELECT * FROM sessions;
@@ -264,7 +264,7 @@ This MVP establishes the foundation for:
 
 ## 🎉 **You're Ready!**
 
-Your BGIN Multi-Agent Privacy Research System is now fully configured and ready for the Block 13 GovHack! 
+Your BGIN Multi-Agent Privacy Research System is now fully configured and ready for the Block 13 development! 
 
 **Start experimenting with the three-agent system and build the future of privacy-preserving governance research!** 🚀🧠🤖
 

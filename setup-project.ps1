@@ -121,7 +121,7 @@ Set-Content -Path ".gitignore" -Value $gitignoreContent
 Write-Host "📦 Creating package.json files..." -ForegroundColor Yellow
 $rootPackageJson = @"
 {
-  "name": "bgin-govhack-mvp",
+  "name": "bgin-mvp",
   "version": "1.0.0",
   "description": "Kyra AI Agent - Sovereign AI with Privacy by Design",
   "private": true,
@@ -339,7 +339,7 @@ Set-Content -Path "docker-compose.yml" -Value $dockerCompose
 # Create basic README
 Write-Host "📚 Creating README..." -ForegroundColor Yellow
 $readme = @"
-# Kyra AI Agent - BGIN GovHack MVP
+# Kyra AI Agent - BGIN MVP
 
 ## Overview
 Kyra is a sovereign AI agent implementing distributed consciousness, privacy by design, and dignity-based economics. This multi-agent system includes Archive, Codex, and Discourse agents working together to create a privacy-preserving AI governance platform.
@@ -390,7 +390,7 @@ Kyra is a sovereign AI agent implementing distributed consciousness, privacy by 
 
 ### Project Structure
 ```
-bgin-govhack-mvp/
+bgin-mvp/
 ├── frontend/          # React TypeScript application
 ├── backend/           # Node.js Express API
 ├── infrastructure/    # Docker and deployment configs

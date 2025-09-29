@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# BGIN GovHack MVP - Development Setup Script
+# BGIN MVP - Development Setup Script
 # This script sets up the development environment for the BGIN Multi-Agent Research Platform
 
 set -e
 
-echo "🚀 Setting up BGIN GovHack MVP Development Environment..."
+echo "🚀 Setting up BGIN MVP Development Environment..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -148,7 +148,7 @@ seed_data() {
 # Main setup function
 main() {
     echo "=========================================="
-    echo "BGIN GovHack MVP Development Setup"
+    echo "BGIN MVP Development Setup"
     echo "=========================================="
     echo ""
     

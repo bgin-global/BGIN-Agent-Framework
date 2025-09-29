@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# BGIN GovHack MVP - Quick Start Script
+# BGIN MVP - Quick Start Script
 # This script provides a quick way to start the BGIN Multi-Agent Research Platform
 
 set -e
 
-echo "🚀 BGIN GovHack MVP - Quick Start"
+echo "🚀 BGIN MVP - Quick Start"
 echo "================================="
 
 # Colors for output
@@ -47,7 +47,7 @@ npm run dev &
 # Wait a moment for servers to start
 sleep 5
 
-print_success "BGIN GovHack MVP is now running!"
+print_success "BGIN MVP is now running!"
 echo ""
 echo "🌐 Access Points:"
 echo "   Frontend: http://localhost:3000"

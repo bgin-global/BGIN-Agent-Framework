@@ -6,7 +6,7 @@ services:
     image: postgres:15-alpine
     container_name: bgin-postgres-prod
     environment:
-      POSTGRES_DB: bgin_govhack
+      POSTGRES_DB: bgin_mvp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_HOST_AUTH_METHOD: trust
@@ -71,7 +71,7 @@ services:
     container_name: bgin-backend-prod
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@postgres:5432/bgin_govhack
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@postgres:5432/bgin_mvp
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       VECTOR_DB_URL: http://qdrant:6333
       JWT_SECRET: ${JWT_SECRET}
