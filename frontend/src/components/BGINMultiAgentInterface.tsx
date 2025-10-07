@@ -4,12 +4,13 @@ import {
   Network, Brain, Target, BarChart3, Lock, Fingerprint, CheckCircle, 
   ShieldCheck, Cpu, Archive, MessageCircle, Scale, Menu,
   Bell, TrendingUp, Award, Lightbulb, BookOpenCheck, ChevronUp,
-  Users, Link
+  Users, Link, Calendar, Filter, Clock
 } from 'lucide-react';
+import LocalApiService from '../services/localApiService';
 
 const BGINMultiAgentInterface = () => {
   const [selectedAgent, setSelectedAgent] = useState('archive');
-  const [selectedSession, setSelectedSession] = useState('regulatory');
+  const [selectedSession, setSelectedSession] = useState('bgin-agent-hack');
   const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -34,7 +35,90 @@ const BGINMultiAgentInterface = () => {
     toip: { connected: false, status: 'disconnected', features: ['DID Management', 'Verifiable Credentials', 'Trust Networks'] },
     privacyPools: { connected: false, status: 'disconnected', features: ['ASP Eligibility', 'Research Rewards', 'Privacy Transactions'] }
   });
+  
+  // Conference Sessions State
+  const [conferenceSessions, setConferenceSessions] = useState<any[]>([]);
+  const [conferenceTracks, setConferenceTracks] = useState<any[]>([]);
+  const [showConferenceSessions, setShowConferenceSessions] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<string>('all');
+  const [selectedDay, setSelectedDay] = useState<string>('all');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load conference data
+  const loadConferenceSessions = async () => {
+    try {
+      const localApiService = LocalApiService.getInstance();
+      const sessions = await localApiService.getConferenceSessions();
+      setConferenceSessions(sessions);
+    } catch (error) {
+      console.error('Failed to load conference sessions:', error);
+    }
+  };
+
+  const loadConferenceTracks = async () => {
+    try {
+      const localApiService = LocalApiService.getInstance();
+      const tracks = await localApiService.getConferenceTracks();
+      setConferenceTracks(tracks);
+    } catch (error) {
+      console.error('Failed to load conference tracks:', error);
+    }
+  };
+
+  const initConferenceSession = async (sessionId: string) => {
+    try {
+      // Get session details
+      const localApiService = LocalApiService.getInstance();
+      const sessionResult = await localApiService.getConferenceSession(sessionId);
+      
+      if (sessionResult.success) {
+        const session = sessionResult.session;
+        
+        // Create Multi Agent Hub session key
+        const multiAgentHubKey = `multi-agent-hub-${sessionId}`;
+        
+        // Initialize Multi Agent Hub with welcome message
+        const welcomeMessage = {
+          id: Date.now(),
+          type: 'system',
+          content: `🌐 **Multi Agent Hub: ${session.title}**\n\n**Session Details:**\n- Date: ${session.date}\n- Time: ${session.time}\n- Room: ${session.room}\n- Track: ${session.workingGroup}\n- Focus: ${session.focus}\n\n**🤖 Multi-Agent Collaboration**\nThis is a shared collaborative chat where all agents (Archive, Codex, Discourse) work together on ${session.sessionType} topics.\n\n**📁 Project Container**\nAll insights and discussions are saved as a project under "Multi Agent Hub" for this conference session.\n\n**Available Agents:** ${session.agents.join(', ')}\n\nStart collaborating with the multi-agent system!`,
+          timestamp: new Date().toLocaleTimeString(),
+          sessionId: sessionId,
+          isSystemMessage: true,
+          isMultiAgentHub: true,
+          projectContainer: 'multi-agent-hub'
+        };
+        
+        // Set up Multi Agent Hub chat
+        setMessages(prev => ({
+          ...prev,
+          [multiAgentHubKey]: [welcomeMessage]
+        }));
+        
+        // Switch to Multi Agent Hub session and multi-agent mode
+        setSelectedSession(multiAgentHubKey);
+        setMultiAgentMode(true);
+        setShowConferenceSessions(false);
+        
+        // Show success message
+        console.log(`✅ Multi Agent Hub initialized for ${session.title}`);
+      }
+    } catch (error) {
+      console.error('Failed to initialize Multi Agent Hub session:', error);
+    }
+  };
+
+
+  const getFilteredSessions = () => {
+    let filtered = conferenceSessions;
+    if (selectedDay !== 'all') {
+      filtered = filtered.filter(session => session.day === selectedDay);
+    }
+    if (selectedTrack !== 'all') {
+      filtered = filtered.filter(session => session.track === selectedTrack);
+    }
+    return filtered;
+  };
 
   // Enhanced Three-Agent System Configuration with ToIP Framework
   const agentTypes: Record<string, any> = {
@@ -118,69 +202,87 @@ const BGINMultiAgentInterface = () => {
     }
   };
 
-  // Session Configuration - Ready for Block 13
+  // Conference Tracks Configuration - Block 13
+  // Architecture:
+  // 1. Left Sidebar Tracks: Individual agent interactions (Archive, Codex, Discourse)
+  //    - Each track contributes to shared project container within LLM
+  //    - Single agent mode, not multi-agent
+  // 2. "Start Session" Button: Opens Multi Agent Hub for conference sessions
+  //    - One Multi Agent Hub per Block 13 conference session
+  //    - Collaborative multi-agent responses
+  //    - Saved as projects under "Multi Agent Hub"
   const sessions: Record<string, any> = {
-    keynote: {
-      id: 'keynote',
-      name: 'Opening Keynote',
-      description: 'Strategic governance frameworks',
-      status: 'planning',
+    'bgin-agent-hack': {
+      id: 'bgin-agent-hack',
+      name: 'BGIN Agent Hack',
+      description: 'Multi-agent system development and AI governance research',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#8B5CF6',
+      workingGroup: 'BGIN Agent Hack',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'AI Development, Multi-Agent Systems, Governance Research', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    technical: {
-      id: 'technical',
-      name: 'Technical Standards',
-      description: 'Protocol development and standardization',
-      status: 'planning',
+    'ikp': {
+      id: 'ikp',
+      name: 'Identity, Key Management & Privacy',
+      description: 'Cryptographic identity, key management, and privacy-preserving technologies',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#10B981',
+      workingGroup: 'IKP',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Key Management, Cryptographic Security, Privacy Technologies', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    regulatory: {
-      id: 'regulatory',
-      name: 'Regulatory Landscape',
-      description: 'Policy analysis and compliance frameworks',
-      status: 'planning',
+    'cyber-security': {
+      id: 'cyber-security',
+      name: 'Cyber Security',
+      description: 'Blockchain security, threat analysis, and protection mechanisms',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#EF4444',
+      workingGroup: 'Cyber Security',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Security Analysis, Threat Assessment, Protection Mechanisms', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    privacy: {
-      id: 'privacy',
-      name: 'Privacy & Digital Rights',
-      description: 'Privacy preservation and rights advocacy',
-      status: 'planning',
+    'fase': {
+      id: 'fase',
+      name: 'FASE (Financial and Social Economies)',
+      description: 'Policy and financial applications of blockchain technology',
+      status: 'active',
       participants: 0,
-      trending: false,
+      trending: true,
+      color: '#F59E0B',
+      workingGroup: 'FASE',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Financial Applications, Policy Analysis, Social Impact', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
     },
-    governance: {
-      id: 'governance',
-      name: 'Cross-Chain Governance',
-      description: 'Multi-chain governance mechanisms',
-      status: 'planning',
+    'general': {
+      id: 'general',
+      name: 'General',
+      description: 'General discussions, networking, and cross-cutting topics',
+      status: 'active',
       participants: 0,
       trending: false,
+      color: '#6B7280',
+      workingGroup: 'General',
       agents: {
-        archive: { knowledgeBase: 'No documents loaded', documents: 0, correlations: 0 },
+        archive: { knowledgeBase: 'Cross-cutting Topics, Networking, General Discussions', documents: 0, correlations: 0 },
         codex: { policyDomains: [], frameworks: 0, assessments: 0 },
         discourse: { activeThreads: 0, consensusItems: 0, engagementRate: 0 }
       }
@@ -188,7 +290,12 @@ const BGINMultiAgentInterface = () => {
   };
 
   const currentAgent = agentTypes[selectedAgent];
-  const currentSession = sessions[selectedSession];
+  const currentSession = sessions[selectedSession] || (selectedSession.startsWith('multi-agent-hub-') ? {
+    name: 'Multi Agent Hub',
+    description: 'Collaborative multi-agent session',
+    participants: 0,
+    agents: { archive: {}, codex: {}, discourse: {} }
+  } : null);
   const currentSessionAgent = currentSession?.agents?.[selectedAgent];
 
   // Initialize messages for each agent-session combination
@@ -214,13 +321,20 @@ const BGINMultiAgentInterface = () => {
       });
     });
     setMessages(initialMessages);
+    
+    // Load conference data
+    loadConferenceSessions();
+    loadConferenceTracks();
   }, []);
 
-  const currentMessages = messages[`${selectedSession}-${selectedAgent}`] || [];
+  const currentMessages = messages[multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`] || [];
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim()) {
+      const isMultiAgentHub = selectedSession.startsWith('multi-agent-hub-');
+      const isTrackSession = !isMultiAgentHub && !multiAgentMode;
       const messageKey = multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`;
+      
       const newMessage = {
         id: Date.now(),
         type: 'user',
@@ -229,7 +343,9 @@ const BGINMultiAgentInterface = () => {
         sessionId: selectedSession,
         agentType: selectedAgent,
         multiAgent: multiAgentMode,
-        privacyLevel: privacyLevel
+        privacyLevel: privacyLevel,
+        isMultiAgentHub: isMultiAgentHub,
+        isTrackSession: isTrackSession
       };
       
       setMessages(prev => ({
@@ -239,8 +355,66 @@ const BGINMultiAgentInterface = () => {
       
       setIsTyping(true);
       
-      // Simulate AI response
-      setTimeout(() => {
+      try {
+        let response;
+        const localApiService = LocalApiService.getInstance();
+        
+        if (isMultiAgentHub) {
+          // Multi Agent Hub - collaborative multi-agent responses
+          console.log('🤖 Multi Agent Hub: Collaborative multi-agent processing');
+          response = await localApiService.sendMessage(
+            inputValue,
+            selectedAgent,
+            selectedSession.replace('multi-agent-hub-', ''), // Remove prefix for API
+            true // Force multi-agent mode
+          );
+        } else if (isTrackSession) {
+          // Individual track session - single agent contributing to shared project
+          console.log(`📁 Track Session: ${selectedAgent} contributing to shared project container`);
+          response = await localApiService.sendMessage(
+            inputValue,
+            selectedAgent,
+            selectedSession,
+            false // Single agent mode
+          );
+        } else {
+          // Regular session
+          response = await localApiService.sendMessage(
+            inputValue,
+            selectedAgent,
+            selectedSession,
+            multiAgentMode
+          );
+        }
+        
+        const aiResponse = {
+          id: Date.now() + 1,
+          type: 'assistant',
+          content: response.content,
+          isHtml: false,
+          timestamp: new Date().toLocaleTimeString(),
+          author: multiAgentMode ? 'Multi-Agent System' : currentAgent.name,
+          agentType: selectedAgent,
+          sessionId: selectedSession,
+          multiAgent: multiAgentMode,
+          confidence: response.confidence,
+          sources: response.sources,
+          llmUsed: response.llmUsed,
+          model: response.model,
+          processingTime: response.processingTime,
+          isMultiAgentHub: isMultiAgentHub,
+          isTrackSession: isTrackSession,
+          projectContainer: isMultiAgentHub ? 'multi-agent-hub' : 'shared-project'
+        };
+        
+        setMessages(prev => ({
+          ...prev,
+          [messageKey]: [...(prev[messageKey] || []), aiResponse]
+        }));
+        
+      } catch (error) {
+        console.error('Failed to get Phala Cloud response:', error);
+        // Fallback to mock response
         const response = generateAgentResponse(inputValue, selectedAgent, selectedSession, multiAgentMode);
         const aiResponse = {
           id: Date.now() + 1,
@@ -253,14 +427,17 @@ const BGINMultiAgentInterface = () => {
           sessionId: selectedSession,
           multiAgent: multiAgentMode,
           confidence: Math.random() * 0.3 + 0.7,
-          sources: Math.floor(Math.random() * 8) + 3
+          sources: Math.floor(Math.random() * 8) + 3,
+          phalaCloudUsed: false,
+          confidentialCompute: false
         };
         setMessages(prev => ({
           ...prev,
           [messageKey]: [...(prev[messageKey] || []), aiResponse]
         }));
+      } finally {
         setIsTyping(false);
-      }, 1500);
+      }
       
       setInputValue('');
     }
@@ -423,7 +600,7 @@ const BGINMultiAgentInterface = () => {
       {/* Session Selector */}
       <div className="space-y-2">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-slate-300">Block 13 Sessions</h3>
+          <h3 className="text-sm font-semibold text-slate-300">Block 13 Tracks</h3>
           <div className="text-xs text-slate-400">{crossSessionInsights} cross-session insights</div>
         </div>
         {Object.values(sessions).map(session => {
@@ -442,10 +619,15 @@ const BGINMultiAgentInterface = () => {
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: session.color }}
+                  />
                   <span className="font-medium">{session.name}</span>
                   {session.trending && <TrendingUp className="w-3 h-3 text-orange-400" />}
                 </div>
                 <div className="text-xs opacity-70">{session.description}</div>
+                <div className="text-xs opacity-50 mt-1">Working Group: {session.workingGroup}</div>
                 {sessionAgent && (
                   <div className="text-xs mt-1 opacity-60 flex items-center gap-3">
                     {selectedAgent === 'archive' && (
@@ -700,8 +882,13 @@ const BGINMultiAgentInterface = () => {
                 </p>
                 <div className="flex items-center gap-4 mt-1">
                   <p className="text-slate-400 text-xs">
-                    Session: {currentSession.name} • {currentSession.participants} participants
+                    Session: {currentSession?.name || 'Unknown'} • {currentSession?.participants || 0} participants
                   </p>
+                  {multiAgentMode && (
+                    <div className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full">
+                      Multi-Agent Chat ({currentMessages.length} messages)
+                    </div>
+                  )}
                   {isTyping && (
                     <div className="flex items-center gap-1 text-xs text-blue-300">
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
@@ -730,6 +917,14 @@ const BGINMultiAgentInterface = () => {
                   })}
                 </div>
               )}
+              
+              <button
+                onClick={() => setShowConferenceSessions(!showConferenceSessions)}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 text-white rounded-lg text-sm transition-all shadow-lg"
+              >
+                <Calendar className="w-4 h-4" />
+                Conference Sessions
+              </button>
             </div>
           </div>
         </div>
@@ -758,7 +953,13 @@ const BGINMultiAgentInterface = () => {
                       <currentAgent.icon className="w-6 h-6" />
                     )}
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <Lock className="w-2 h-2 text-white" />
+                      {message.isMultiAgentHub ? (
+                        <Network className="w-2 h-2 text-white" />
+                      ) : message.isTrackSession ? (
+                        <Target className="w-2 h-2 text-white" />
+                      ) : (
+                        <Lock className="w-2 h-2 text-white" />
+                      )}
                     </div>
                   </div>
                   <span className="text-xs text-slate-400 text-center max-w-20 truncate">
@@ -801,6 +1002,24 @@ const BGINMultiAgentInterface = () => {
                               <span>{Math.round(message.confidence * 100)}%</span>
                             </div>
                           )}
+                          {message.isMultiAgentHub && (
+                            <div className="flex items-center gap-1 text-purple-300">
+                              <Network className="w-3 h-3" />
+                              <span>Multi Agent Hub</span>
+                            </div>
+                          )}
+                          {message.isTrackSession && (
+                            <div className="flex items-center gap-1 text-orange-300">
+                              <Target className="w-3 h-3" />
+                              <span>Track Session</span>
+                            </div>
+                          )}
+                          {message.projectContainer && (
+                            <div className="flex items-center gap-1 text-green-300">
+                              <Archive className="w-3 h-3" />
+                              <span>{message.projectContainer}</span>
+                            </div>
+                          )}
                           {message.sources && (
                             <div className="flex items-center gap-1 text-yellow-300">
                               <BookOpenCheck className="w-3 h-3" />
@@ -813,6 +1032,18 @@ const BGINMultiAgentInterface = () => {
                         <ShieldCheck className="w-3 h-3" />
                         <span>Privacy Protected</span>
                       </div>
+                      {message.phalaCloudUsed && (
+                        <div className="flex items-center gap-1 text-purple-300">
+                          <Cpu className="w-3 h-3" />
+                          <span>TEE Verified</span>
+                        </div>
+                      )}
+                      {message.confidentialCompute && (
+                        <div className="flex items-center gap-1 text-blue-300">
+                          <Lock className="w-3 h-3" />
+                          <span>Confidential</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -861,7 +1092,7 @@ const BGINMultiAgentInterface = () => {
                   placeholder={
                     multiAgentMode 
                       ? "Ask all agents to collaborate on your research question..."
-                      : `Ask the ${currentAgent.name} about ${currentSession.name.toLowerCase()}...`
+                      : `Ask the ${currentAgent.name} about ${currentSession?.name?.toLowerCase() || 'this topic'}...`
                   }
                   className="w-full p-4 bg-slate-700/50 border border-blue-400/30 rounded-xl text-white placeholder-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 pr-20"
                 />
@@ -873,6 +1104,7 @@ const BGINMultiAgentInterface = () => {
                   <button
                     onClick={handleSendMessage}
                     className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                    title="Send message"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -946,6 +1178,110 @@ const BGINMultiAgentInterface = () => {
             )}
           </div>
         </div>
+        
+        {/* Conference Sessions Panel */}
+        {showConferenceSessions && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-slate-800 rounded-xl shadow-2xl border border-blue-400/30 w-full max-w-6xl h-5/6 m-4 flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-blue-400/30">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-green-600 to-teal-600 rounded-lg">
+                    <Calendar className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Block 13 Conference Sessions</h2>
+                    <p className="text-slate-300">Select a session to start a multi-agent discussion</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowConferenceSessions(false)}
+                  className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                  title="Close conference sessions"
+                >
+                  <ChevronUp className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Filters */}
+              <div className="p-6 border-b border-blue-400/20">
+                <div className="flex flex-wrap gap-4">
+                  {/* Track Filter */}
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <select
+                      value={selectedTrack}
+                      onChange={(e) => setSelectedTrack(e.target.value)}
+                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      aria-label="Filter by track"
+                    >
+                      <option value="all">All Tracks</option>
+                      {conferenceTracks.map(track => (
+                        <option key={track.id} value={track.id}>{track.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Day Filter */}
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                    <select
+                      value={selectedDay}
+                      onChange={(e) => setSelectedDay(e.target.value)}
+                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm"
+                      aria-label="Filter by day"
+                    >
+                      <option value="all">All Days</option>
+                      <option value="Day 1">Day 1 - October 15</option>
+                      <option value="Day 2">Day 2 - October 16</option>
+                      <option value="Day 3">Day 3 - October 17</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Sessions List */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid gap-4">
+                  {getFilteredSessions().map(session => {
+                    const track = conferenceTracks.find(t => t.id === session.track);
+                    return (
+                      <div key={session.id} className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 hover:bg-slate-700/70 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: track?.color || '#6B7280' }}
+                              />
+                              <h3 className="text-lg font-semibold text-white">{session.title}</h3>
+                              <span className="px-2 py-1 bg-slate-600 text-slate-300 text-xs rounded-full">
+                                {session.day}
+                              </span>
+                            </div>
+                            <p className="text-slate-300 text-sm mb-2">{session.description}</p>
+                            <div className="flex items-center gap-4 text-xs text-slate-400">
+                              <span>📍 {session.room}</span>
+                              <span>🕐 {session.time}</span>
+                              <span>👥 {session.agents?.length || 0} agents</span>
+                              {track && <span>🏷️ {track.name}</span>}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => initConferenceSession(session.id)}
+                            className="ml-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-lg text-sm transition-all shadow-lg"
+                          >
+                            Open Multi Agent Hub
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

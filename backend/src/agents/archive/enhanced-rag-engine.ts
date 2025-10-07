@@ -7,6 +7,8 @@ import { documentProcessor, DocumentMetadata, ProcessedDocument } from './docume
 import { llmClient } from '../../integrations/llm/llm-client';
 import { discourseClient } from '../../integrations/discourse-api/discourse-client';
 import { kwaaiClient } from '../../integrations/kwaai/kwaai-client';
+import { phalaRAGService, PhalaRAGResult } from './phala-rag-service';
+import { phalaLLMService } from '../../integrations/phala-cloud/phala-llm-service';
 import { logger } from '../../utils/logger';
 import { database } from '../../utils/database';
 
@@ -88,8 +90,8 @@ export class EnhancedRAGEngine {
         synthesisMode: ragQuery.synthesisMode || 'summary'
       };
 
-      // Step 6: Generate response using LLM
-      const response = await this.generateSynthesis(synthesisContext);
+      // Step 6: Generate response using LLM (with Phala Cloud integration)
+      const response = await this.generateSynthesisWithPhala(synthesisContext);
 
       // Step 7: Generate insights and recommendations
       const insights = await this.generateInsights(synthesisContext);
@@ -120,6 +122,175 @@ export class EnhancedRAGEngine {
     } catch (error) {
       logger.error('RAG query processing failed:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Process RAG query using Phala Cloud TEE for confidential compute
+   * This method provides hardware-level privacy and verifiable computation
+   */
+  async processQueryWithPhala(
+    ragQuery: RAGQuery,
+    track: 'technical-standards' | 'regulatory-landscape' | 'privacy-rights' | 'cross-chain-governance'
+  ): Promise<RAGResponse> {
+    const startTime = Date.now();
+    
+    try {
+      logger.info(`Processing RAG query with Phala Cloud for track ${track}: "${ragQuery.query}" in session ${ragQuery.sessionId}`);
+
+      // Step 1: Get relevant documents for the track
+      const searchResults = await this.searchRelevantDocuments(ragQuery);
+      const rankedResults = await retrievalSystem.rankResults(searchResults);
+      const filteredResults = await retrievalSystem.applyPrivacyFilters(rankedResults, ragQuery.userContext);
+      
+      // Step 2: Prepare documents for Phala Cloud processing
+      const documents = filteredResults.slice(0, ragQuery.maxResults || this.MAX_SOURCES).map(result => ({
+        id: result.metadata.documentId,
+        content: result.content,
+        metadata: {
+          title: result.document?.title || 'Untitled',
+          score: result.finalScore,
+          accessLevel: result.accessLevel,
+          sessionId: ragQuery.sessionId
+        }
+      }));
+
+      // Step 3: Process using Phala Cloud TEE
+      const phalaResult = await phalaRAGService.processTrackQuery(
+        ragQuery.query,
+        track,
+        ragQuery.sessionId,
+        documents
+      );
+
+      // Step 4: Generate additional insights using local processing
+      const insights = await this.generateInsights({
+        query: ragQuery.query,
+        sources: phalaResult.sources.map(source => ({
+          id: source.id,
+          documentId: source.id,
+          content: source.content,
+          score: source.relevanceScore,
+          finalScore: source.relevanceScore,
+          relevanceScore: source.relevanceScore,
+          qualityScore: 0.8, // Default quality score
+          recencyScore: 0.7, // Default recency score
+          accessLevel: 'full' as const,
+          privacyCompliant: true,
+          metadata: { 
+            documentId: source.id, 
+            title: source.title,
+            sessionId: ragQuery.sessionId,
+            privacyLevel: ragQuery.userContext.privacyLevel,
+            chunkIndex: 0,
+            startIndex: 0,
+            endIndex: source.content.length,
+            wordCount: source.content.split(' ').length
+          }
+        })),
+        sessionContext: await this.getSessionContext(ragQuery.sessionId),
+        userContext: ragQuery.userContext,
+        synthesisMode: ragQuery.synthesisMode || 'summary'
+      });
+
+      const recommendations = await this.generateRecommendations({
+        query: ragQuery.query,
+        sources: phalaResult.sources.map(source => ({
+          id: source.id,
+          documentId: source.id,
+          content: source.content,
+          score: source.relevanceScore,
+          finalScore: source.relevanceScore,
+          relevanceScore: source.relevanceScore,
+          qualityScore: 0.8, // Default quality score
+          recencyScore: 0.7, // Default recency score
+          accessLevel: 'full' as const,
+          privacyCompliant: true,
+          metadata: { 
+            documentId: source.id, 
+            title: source.title,
+            sessionId: ragQuery.sessionId,
+            privacyLevel: ragQuery.userContext.privacyLevel,
+            chunkIndex: 0,
+            startIndex: 0,
+            endIndex: source.content.length,
+            wordCount: source.content.split(' ').length
+          }
+        })),
+        sessionContext: await this.getSessionContext(ragQuery.sessionId),
+        userContext: ragQuery.userContext,
+        synthesisMode: ragQuery.synthesisMode || 'summary'
+      });
+
+      const processingTime = Date.now() - startTime;
+
+      return {
+        response: phalaResult.response,
+        sources: phalaResult.sources.map(source => ({
+          documentId: source.id,
+          title: source.title,
+          content: source.content,
+          score: source.relevanceScore,
+          accessLevel: 'full' as const
+        })),
+        metadata: {
+          totalSources: phalaResult.sources.length,
+          crossSessionSources: 0, // Phala handles this internally
+          processingTime,
+          confidence: phalaResult.confidence,
+          privacyLevel: ragQuery.userContext.privacyLevel
+        },
+        insights,
+        recommendations
+      };
+
+    } catch (error) {
+      logger.error('Phala RAG query processing failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate synthesis using Phala Cloud for confidential compute
+   * This maintains the existing UI while adding Phala Cloud capabilities
+   */
+  private async generateSynthesisWithPhala(context: SynthesisContext): Promise<{ content: string; confidence: number }> {
+    try {
+      logger.info('Generating synthesis with Phala Cloud for confidential compute');
+
+      // Prepare context for Phala Cloud
+      const contextString = context.sources.map(source => 
+        `Document: ${source.document?.title || 'Untitled'}\nContent: ${source.content}\nRelevance: ${source.finalScore}`
+      ).join('\n\n');
+
+      // Use Phala Cloud for LLM inference
+      const phalaResponse = await phalaLLMService.generateArchiveResponse(
+        context.query,
+        context.sessionContext?.sessionId || 'unknown',
+        contextString,
+        context.synthesisMode
+      );
+
+      // Extract response content
+      const content = phalaResponse.choices[0]?.message?.content || 'No response generated';
+      const confidence = 0.9; // High confidence for Phala Cloud responses
+
+      logger.info(`Phala Cloud synthesis completed with ${phalaResponse.usage?.total_tokens || 0} tokens`);
+
+      return {
+        content,
+        confidence: confidence || 0.9
+      };
+
+    } catch (error) {
+      logger.error('Phala Cloud synthesis failed, falling back to local LLM:', error);
+      
+      // Fallback to local LLM if Phala Cloud fails
+      const fallbackResult = await this.generateSynthesis(context);
+      return {
+        content: fallbackResult.content,
+        confidence: fallbackResult.confidence || 0.7 // Default confidence for fallback
+      };
     }
   }
 
@@ -254,7 +425,7 @@ export class EnhancedRAGEngine {
         SELECT id FROM sessions WHERE id != $1
       `, [ragQuery.sessionId]);
 
-      const otherSessionIds = sessions.rows.map(row => row.id);
+      const otherSessionIds = sessions.rows.map((row: any) => row.id);
       
       if (otherSessionIds.length === 0) {
         return [];
@@ -267,7 +438,9 @@ export class EnhancedRAGEngine {
         5 // Limit cross-session results
       );
 
-      return await retrievalSystem.applyPrivacyFilters(crossSessionResults, ragQuery.userContext);
+      // Convert SearchResult to RankedResult
+      const rankedResults = await retrievalSystem.rankResults(crossSessionResults);
+      return await retrievalSystem.applyPrivacyFilters(rankedResults, ragQuery.userContext);
 
     } catch (error) {
       logger.error('Cross-session search failed:', error);

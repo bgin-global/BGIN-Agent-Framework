@@ -100,7 +100,7 @@ class AnthropicProvider implements LLMProvider {
           totalTokens: response.usage.input_tokens + response.usage.output_tokens
         },
         model: response.model,
-        finishReason: response.stop_reason
+        finishReason: response.stop_reason || undefined
       };
     } catch (error) {
       logger.error('Anthropic API error:', error);
