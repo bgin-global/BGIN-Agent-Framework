@@ -34,7 +34,7 @@ The BGIN AI MVP is a privacy-preserving, multi-agent research platform for block
 - **Discourse Agent**: Communications & Collaboration (Green theme)
 
 ### **Conference Integration**
-- **19 Conference Sessions**: Complete Block 13 schedule (Oct 15-17, 2025)
+- **19 Conference Sessions**: Complete Block 13 schedule (Oct 17, 2025)
 - **5 Working Groups**: BGIN Agent Hack, IKP, Cyber Security, FASE, General
 - **Multi Agent Hub**: Collaborative discussions per conference session
 - **Track Sessions**: Individual agent interactions within tracks
@@ -284,6 +284,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Last Updated**: January 27, 2025  
+**Last Updated**: October 7, 2025  
 **Version**: 1.0.0  
-**Next Review**: July 27, 2025
+**Next Review**: April 7, 2026

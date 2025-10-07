@@ -232,11 +232,11 @@ RATE_LIMIT_MAX=100
 
 ---
 
-**Last Updated**: January 27, 2025
+**Last Updated**: October 7, 2025
 
 **Version**: 1.0.0
 
-**Next Review**: July 27, 2025
+**Next Review**: April 7, 2026
 
 ---
 
