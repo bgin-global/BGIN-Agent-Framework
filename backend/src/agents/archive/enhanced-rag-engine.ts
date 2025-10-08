@@ -4,6 +4,7 @@
 
 import { retrievalSystem, SearchFilters, UserContext, SearchResult, FilteredResult } from './retrieval-system';
 import { documentProcessor, DocumentMetadata, ProcessedDocument } from './document-processor';
+import { documentationAdvisor, DocumentationQualityMetrics, DocumentationRecommendation, DocumentationPlan } from './documentation-advisor';
 import { llmClient } from '../../integrations/llm/llm-client';
 import { discourseClient } from '../../integrations/discourse-api/discourse-client';
 import { kwaaiClient } from '../../integrations/kwaai/kwaai-client';
@@ -668,6 +669,302 @@ Provide specific, actionable recommendations.`;
       .replace(/&gt;/g, '>') // Replace &gt;
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
+  }
+
+  /**
+   * Generate comprehensive documentation using OpenDocs methodology
+   */
+  async generateDocumentation(
+    topic: string,
+    context: { sessionId: string; domain: string; targetAudience: string[] },
+    options?: {
+      includeQualityAnalysis?: boolean;
+      generateRecommendations?: boolean;
+      validateAgainstStandards?: boolean;
+    }
+  ): Promise<{
+    plan: DocumentationPlan;
+    content: string;
+    qualityMetrics?: DocumentationQualityMetrics;
+    recommendations?: DocumentationRecommendation[];
+    validation?: { isValid: boolean; issues: string[]; suggestions: string[] };
+  }> {
+    try {
+      logger.info(`Generating documentation for topic: ${topic}`);
+
+      // Step 1: Get related documents for context
+      const relatedDocuments = await this.getRelatedDocuments(topic, context.sessionId);
+      
+      // Step 2: Create documentation plan using OpenDocs methodology
+      const plan = await documentationAdvisor.createDocumentationPlan(
+        topic,
+        context,
+        relatedDocuments
+      );
+
+      // Step 3: Generate content for each section
+      let fullContent = `# ${plan.title}\n\n${plan.overview}\n\n`;
+      
+      for (const section of plan.sections) {
+        const sectionContent = await documentationAdvisor.generateDocumentationContent(
+          section,
+          context,
+          relatedDocuments
+        );
+        fullContent += sectionContent + '\n\n';
+      }
+
+      const result: any = {
+        plan,
+        content: fullContent
+      };
+
+      // Step 4: Quality analysis (if requested)
+      if (options?.includeQualityAnalysis) {
+        const mockDocument: ProcessedDocument = {
+          id: 'temp-doc',
+          title: plan.title,
+          content: fullContent,
+          metadata: {
+            sessionId: context.sessionId,
+            privacyLevel: 'selective',
+            documentType: 'generated_documentation'
+          },
+          chunks: [],
+          summary: plan.overview,
+          keywords: [],
+          entities: [],
+          qualityScore: 0,
+          processingStatus: 'completed'
+        };
+
+        result.qualityMetrics = await documentationAdvisor.analyzeDocumentationQuality(
+          mockDocument,
+          { sessionId: context.sessionId, domain: context.domain }
+        );
+      }
+
+      // Step 5: Generate recommendations (if requested)
+      if (options?.generateRecommendations && result.qualityMetrics) {
+        result.recommendations = await documentationAdvisor.generateRecommendations(
+          mockDocument,
+          result.qualityMetrics,
+          { sessionId: context.sessionId, domain: context.domain }
+        );
+      }
+
+      // Step 6: Validate against standards (if requested)
+      if (options?.validateAgainstStandards) {
+        result.validation = await documentationAdvisor.validateDocumentation(fullContent);
+      }
+
+      logger.info(`Documentation generation completed for topic: ${topic}`);
+      return result;
+
+    } catch (error) {
+      logger.error('Documentation generation failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Analyze and improve existing documentation using OpenDocs methodology
+   */
+  async analyzeAndImproveDocumentation(
+    documentId: string,
+    context: { sessionId: string; domain: string }
+  ): Promise<{
+    originalDocument: ProcessedDocument;
+    qualityMetrics: DocumentationQualityMetrics;
+    recommendations: DocumentationRecommendation[];
+    improvedContent?: string;
+  }> {
+    try {
+      logger.info(`Analyzing and improving documentation: ${documentId}`);
+
+      // Step 1: Get the document
+      const document = await documentProcessor.getDocument(documentId);
+      if (!document) {
+        throw new Error(`Document ${documentId} not found`);
+      }
+
+      // Step 2: Analyze quality
+      const qualityMetrics = await documentationAdvisor.analyzeDocumentationQuality(
+        document,
+        context
+      );
+
+      // Step 3: Generate recommendations
+      const recommendations = await documentationAdvisor.generateRecommendations(
+        document,
+        qualityMetrics,
+        context
+      );
+
+      // Step 4: Generate improved content (if quality is low)
+      let improvedContent: string | undefined;
+      if (qualityMetrics.overallScore < 0.6) {
+        const plan = await documentationAdvisor.createDocumentationPlan(
+          document.title,
+          {
+            sessionId: context.sessionId,
+            domain: context.domain,
+            targetAudience: ['researchers', 'policymakers', 'developers']
+          },
+          [document]
+        );
+
+        // Generate improved content
+        let content = `# ${plan.title}\n\n${plan.overview}\n\n`;
+        for (const section of plan.sections) {
+          const sectionContent = await documentationAdvisor.generateDocumentationContent(
+            section,
+            {
+              sessionId: context.sessionId,
+              domain: context.domain,
+              targetAudience: ['researchers', 'policymakers', 'developers']
+            },
+            [document]
+          );
+          content += sectionContent + '\n\n';
+        }
+        improvedContent = content;
+      }
+
+      return {
+        originalDocument: document,
+        qualityMetrics,
+        recommendations,
+        improvedContent
+      };
+
+    } catch (error) {
+      logger.error('Documentation analysis and improvement failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate documentation metrics and analytics
+   */
+  async generateDocumentationAnalytics(
+    sessionId: string,
+    timeRange?: { start: Date; end: Date }
+  ): Promise<{
+    totalDocuments: number;
+    averageQuality: number;
+    qualityDistribution: { [key: string]: number };
+    topIssues: string[];
+    improvementTrends: { [key: string]: number };
+    recommendations: string[];
+  }> {
+    try {
+      logger.info(`Generating documentation analytics for session: ${sessionId}`);
+
+      // Get all documents in the session
+      const documents = await database.query(`
+        SELECT id, title, content, summary, keywords, quality_score, created_at
+        FROM archive_documents 
+        WHERE session_id = $1 AND processing_status = 'completed'
+        ${timeRange ? 'AND created_at BETWEEN $2 AND $3' : ''}
+        ORDER BY created_at DESC
+      `, timeRange ? [sessionId, timeRange.start, timeRange.end] : [sessionId]);
+
+      const processedDocuments: ProcessedDocument[] = documents.rows.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        metadata: {
+          sessionId: sessionId,
+          privacyLevel: 'selective' as const,
+          documentType: 'archive_document'
+        },
+        chunks: [],
+        summary: row.summary || '',
+        keywords: row.keywords || [],
+        entities: [],
+        qualityScore: row.quality_score || 0,
+        processingStatus: 'completed' as const
+      }));
+
+      // Generate metrics
+      const metrics = await documentationAdvisor.generateDocumentationMetrics(
+        processedDocuments,
+        timeRange
+      );
+
+      // Generate recommendations based on analytics
+      const recommendations = await this.generateAnalyticsRecommendations(metrics, processedDocuments);
+
+      return {
+        ...metrics,
+        recommendations
+      };
+
+    } catch (error) {
+      logger.error('Documentation analytics generation failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get related documents for a topic
+   */
+  private async getRelatedDocuments(topic: string, sessionId: string): Promise<ProcessedDocument[]> {
+    try {
+      const searchResults = await retrievalSystem.searchSimilar(
+        topic,
+        { sessionId, privacyLevel: 'selective' },
+        10
+      );
+
+      const documents: ProcessedDocument[] = [];
+      for (const result of searchResults) {
+        if (result.document) {
+          documents.push(result.document);
+        }
+      }
+
+      return documents;
+
+    } catch (error) {
+      logger.error('Failed to get related documents:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Generate recommendations based on analytics
+   */
+  private async generateAnalyticsRecommendations(
+    metrics: any,
+    documents: ProcessedDocument[]
+  ): Promise<string[]> {
+    try {
+      const recommendations: string[] = [];
+
+      if (metrics.averageQuality < 0.6) {
+        recommendations.push('Consider implementing a documentation review process to improve overall quality');
+      }
+
+      if (metrics.qualityDistribution.poor > metrics.qualityDistribution.excellent) {
+        recommendations.push('Focus on improving low-quality documents before creating new ones');
+      }
+
+      if (documents.length < 5) {
+        recommendations.push('Increase documentation coverage for better knowledge management');
+      }
+
+      if (metrics.topIssues.length > 0) {
+        recommendations.push(`Address common issues: ${metrics.topIssues.slice(0, 3).join(', ')}`);
+      }
+
+      return recommendations;
+
+    } catch (error) {
+      logger.error('Failed to generate analytics recommendations:', error);
+      return [];
+    }
   }
 
   async healthCheck(): Promise<boolean> {
