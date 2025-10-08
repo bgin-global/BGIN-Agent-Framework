@@ -827,3 +827,4 @@ export class WorkingGroupManager extends EventEmitter {
 
 // Singleton instance
 export const workingGroupManager = new WorkingGroupManager();
+

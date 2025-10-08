@@ -31,6 +31,35 @@ const BGINMultiAgentInterface = () => {
   const [showAgentSelector, setShowAgentSelector] = useState(false); // New state for agent selector
   const [showMyContributions, setShowMyContributions] = useState(false); // New state for contributions panel
   const [showCredentialComposer, setShowCredentialComposer] = useState(false); // New state for credential composer
+  const [showUploadModal, setShowUploadModal] = useState(false); // New state for upload modal
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadAuthor, setUploadAuthor] = useState('');
+  const [uploadTags, setUploadTags] = useState('');
+  const [uploadWorkingGroup, setUploadWorkingGroup] = useState('');
+  const [workingGroups, setWorkingGroups] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Load working groups on component mount
+  useEffect(() => {
+    const loadWorkingGroups = async () => {
+      try {
+        const apiService = LocalApiService.getInstance();
+        const response = await apiService.getWorkingGroups();
+        if (response.success) {
+          setWorkingGroups(response.workingGroups);
+          // Set default working group to the first one
+          if (response.workingGroups.length > 0) {
+            setUploadWorkingGroup(response.workingGroups[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load working groups:', error);
+      }
+    };
+
+    loadWorkingGroups();
+  }, []);
 
   // Close panels when clicking outside
   useEffect(() => {
@@ -48,11 +77,15 @@ const BGINMultiAgentInterface = () => {
       if (showCredentialComposer && !target.closest('[data-credential-composer]')) {
         setShowCredentialComposer(false);
       }
+
+      if (showUploadModal && !target.closest('[data-upload-modal]')) {
+        setShowUploadModal(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showAgentSelector, showMyContributions, showCredentialComposer]);
+  }, [showAgentSelector, showMyContributions, showCredentialComposer, showUploadModal]);
   const [integrationStatus] = useState({
     kwaai: { connected: false, status: 'disconnected', features: ['Privacy Analytics', 'Selective Disclosure', 'Zero-Knowledge Proofs'] },
     fpp: { connected: false, status: 'disconnected', features: ['Data Sovereignty', 'Dignity-Based Economics', 'Privacy by Design'] },
@@ -476,6 +509,55 @@ const BGINMultiAgentInterface = () => {
       }
       
       setInputValue('');
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      // Auto-fill title from filename if not already set
+      if (!uploadTitle) {
+        setUploadTitle(file.name.replace(/\.[^/.]+$/, ""));
+      }
+    }
+  };
+
+  const handleUploadDocument = async () => {
+    if (!uploadFile || !uploadTitle || !uploadAuthor || !uploadWorkingGroup) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const apiService = LocalApiService.getInstance();
+      const tags = uploadTags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      
+      const response = await apiService.uploadDocument(
+        uploadFile,
+        uploadWorkingGroup,
+        uploadTitle,
+        uploadAuthor,
+        tags
+      );
+
+      if (response.success) {
+        alert('Document uploaded successfully!');
+        setShowUploadModal(false);
+        // Reset form
+        setUploadFile(null);
+        setUploadTitle('');
+        setUploadAuthor('');
+        setUploadTags('');
+      } else {
+        alert('Failed to upload document: ' + response.error);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload document. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -1208,8 +1290,11 @@ const BGINMultiAgentInterface = () => {
         <PrivacyStatusBar />
         <AgentStatusBar />
         
-        {/* Collaborative Session Header */}
-        <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-4">
+        
+        {/* Main Content Area */}
+        <>
+            {/* Collaborative Session Header */}
+            <div className="bg-slate-800/50 backdrop-blur border-b border-blue-400/30 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {!showSidebar && (
@@ -1474,7 +1559,10 @@ const BGINMultiAgentInterface = () => {
           <div className="flex items-end gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <button className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-sm hover:bg-blue-500/30 transition-colors">
+                <button 
+                  onClick={() => setShowUploadModal(true)}
+                  className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-sm hover:bg-blue-500/30 transition-colors"
+                >
                   <Upload className="w-4 h-4" />
                   Upload Document
                 </button>
@@ -1698,6 +1786,131 @@ const BGINMultiAgentInterface = () => {
             </div>
           </div>
         )}
+
+        {/* Upload Document Modal */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" data-upload-modal>
+            <div className="bg-slate-800 border border-blue-400/30 rounded-xl p-6 w-full max-w-md mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Upload Document</h3>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* File Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Select File
+                  </label>
+                  <input
+                    type="file"
+                    onChange={handleFileUpload}
+                    accept=".pdf,.txt,.md,.docx,.html"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                  {uploadFile && (
+                    <p className="text-xs text-slate-400 mt-1">
+                      Selected: {uploadFile.name}
+                    </p>
+                  )}
+                </div>
+
+                {/* Working Group Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Working Group
+                  </label>
+                  <select
+                    value={uploadWorkingGroup}
+                    onChange={(e) => setUploadWorkingGroup(e.target.value)}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  >
+                    {workingGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    placeholder="Document title"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                {/* Author */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Author *
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadAuthor}
+                    onChange={(e) => setUploadAuthor(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadTags}
+                    onChange={(e) => setUploadTags(e.target.value)}
+                    placeholder="block13, privacy, governance"
+                    className="w-full p-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                {/* Upload Button */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowUploadModal(false)}
+                    className="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUploadDocument}
+                    disabled={isUploading || !uploadFile || !uploadTitle || !uploadAuthor || !uploadWorkingGroup}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-500 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        Upload
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
       </div>
     </div>
   );

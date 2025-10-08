@@ -41,7 +41,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       documentation: result,
       message: 'Documentation generated successfully'
@@ -49,7 +49,7 @@ router.post('/generate', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Documentation generation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Documentation generation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -75,7 +75,7 @@ router.post('/analyze/:documentId', asyncHandler(async (req, res) => {
       { sessionId, domain }
     );
 
-    res.json({
+    return res.json({
       success: true,
       analysis: result,
       message: 'Documentation analysis completed'
@@ -83,7 +83,7 @@ router.post('/analyze/:documentId', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Documentation analysis failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Documentation analysis failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -108,7 +108,7 @@ router.get('/analytics/:sessionId', asyncHandler(async (req, res) => {
       timeRange
     );
 
-    res.json({
+    return res.json({
       success: true,
       analytics,
       message: 'Documentation analytics generated'
@@ -116,7 +116,7 @@ router.get('/analytics/:sessionId', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Documentation analytics failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Documentation analytics failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -159,7 +159,7 @@ router.post('/policy/generate', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       documentation: result,
       message: 'Policy documentation generated successfully'
@@ -167,7 +167,7 @@ router.post('/policy/generate', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Policy documentation generation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Policy documentation generation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -199,7 +199,7 @@ router.post('/standards/create', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       document,
       message: 'Standards document created successfully'
@@ -207,7 +207,7 @@ router.post('/standards/create', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Standards document creation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Standards document creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -240,7 +240,7 @@ router.post('/compliance/report', asyncHandler(async (req, res) => {
       targetPolicies
     );
 
-    res.json({
+    return res.json({
       success: true,
       report,
       message: 'Compliance report generated successfully'
@@ -248,7 +248,7 @@ router.post('/compliance/report', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Compliance report generation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Compliance report generation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -287,7 +287,7 @@ router.post('/workflow/create', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       workflow,
       message: 'Documentation workflow created successfully'
@@ -295,7 +295,7 @@ router.post('/workflow/create', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Workflow creation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Workflow creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -322,7 +322,7 @@ router.post('/workflow/:workflowId/execute/:phaseIndex', asyncHandler(async (req
       { sessionId, domain }
     );
 
-    res.json({
+    return res.json({
       success: true,
       results,
       message: `Phase ${phaseIndex} executed successfully`
@@ -330,7 +330,7 @@ router.post('/workflow/:workflowId/execute/:phaseIndex', asyncHandler(async (req
 
   } catch (error) {
     logger.error('Phase execution failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Phase execution failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -351,7 +351,7 @@ router.get('/workflow/:workflowId', asyncHandler(async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       workflow,
       message: 'Workflow retrieved successfully'
@@ -359,7 +359,7 @@ router.get('/workflow/:workflowId', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Workflow retrieval failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Workflow retrieval failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -404,7 +404,7 @@ router.post('/version/create', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       version,
       message: 'Document version created successfully'
@@ -412,7 +412,7 @@ router.post('/version/create', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Version creation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Version creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -437,7 +437,7 @@ router.post('/version/compare', asyncHandler(async (req, res) => {
       version2Id
     );
 
-    res.json({
+    return res.json({
       success: true,
       comparison,
       message: 'Version comparison completed'
@@ -445,7 +445,7 @@ router.post('/version/compare', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Version comparison failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Version comparison failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -475,7 +475,7 @@ router.post('/version/merge', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       mergedVersion,
       message: 'Versions merged successfully'
@@ -483,7 +483,7 @@ router.post('/version/merge', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Version merge failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Version merge failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -499,7 +499,7 @@ router.get('/version/history/:documentId', asyncHandler(async (req, res) => {
   try {
     const history = documentationVersioningManager.getVersionHistory(documentId);
 
-    res.json({
+    return res.json({
       success: true,
       history,
       message: 'Version history retrieved successfully'
@@ -507,7 +507,7 @@ router.get('/version/history/:documentId', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Version history retrieval failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Version history retrieval failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -544,7 +544,7 @@ router.post('/version/branch', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       branch,
       message: 'Version branch created successfully'
@@ -552,7 +552,7 @@ router.post('/version/branch', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Branch creation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Branch creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -575,7 +575,7 @@ router.get('/health', asyncHandler(async (req, res) => {
 
     const allHealthy = checks.every(check => check === true);
 
-    res.json({
+    return res.json({
       success: true,
       healthy: allHealthy,
       checks: {
@@ -589,7 +589,7 @@ router.get('/health', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Health check failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Health check failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });

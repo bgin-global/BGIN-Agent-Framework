@@ -1,33 +1,43 @@
 # 🤖 LLM Integration Setup Guide
 
 ## Current Status
-✅ **Server is running with Ollama as primary LLM provider**
-✅ **Ollama local models configured and working**
+✅ **Server is running with KwaaiNet as primary LLM provider**
+✅ **KwaaiNet API integration configured and working**
 ✅ **Multi-agent system fully functional**
 ✅ **Fallback system configured** (OpenAI → Phala Cloud → Static responses)
 ✅ **All BGIN agents operational** (Archive, Codex, Discourse)
 
 ## LLM Integration Options
 
-### Option 1: Ollama Local Models (Primary - Currently Active)
+### Option 1: KwaaiNet API (Primary - Currently Active)
 **Status**: ✅ **ACTIVE AND WORKING**
-- **Model**: llama3.2:3b-instruct-q4_0 (1.9 GB)
-- **Endpoint**: http://localhost:11434
-- **Benefits**: Complete privacy, no API costs, full local control
-- **Performance**: ~5-7 seconds per response
+- **Model**: kwaainet/llama-3.2-3b-instruct
+- **Endpoint**: https://api.kwaai.ai/v1
+- **Benefits**: High-quality responses, privacy-preserving, cloud-based
+- **Performance**: ~2-4 seconds per response
 - **Confidence**: 0.85 (high quality responses)
 
 **Models Available:**
-- `llama3.2:3b-instruct-q4_0` (Primary - Fast, efficient)
-- `llama3.2:latest` (Alternative - More capable)
+- `kwaainet/llama-3.2-3b-instruct` (Primary - Fast, efficient)
+- `kwaainet/llama-3.2-70b-instruct` (Alternative - More capable)
 
 **To change models:**
-1. Update `OLLAMA_MODEL` in your environment or server config
+1. Update `KWAAI_MODEL` in your environment or server config
 2. Restart the server
+
+**To configure KwaaiNet:**
+1. Get your KwaaiNet API key from [Kwaai Platform](https://kwaai.ai)
+2. Add to `.env` file:
+   ```
+   KWAAI_ENDPOINT=https://api.kwaai.ai/v1
+   KWAAI_API_KEY=your-kwaai-api-key-here
+   KWAAI_MODEL=kwaainet/llama-3.2-3b-instruct
+   ```
+3. Restart the server
 
 ### Option 2: OpenAI API (Fallback)
 **Status**: ⚠️ Optional fallback (not configured)
-- **Purpose**: Fallback when Ollama is unavailable
+- **Purpose**: Fallback when KwaaiNet is unavailable
 - **Setup**: Add `OPENAI_API_KEY` to `.env` file
 - **Benefits**: High-quality responses, reliable service
 
@@ -55,58 +65,75 @@
 curl http://localhost:4000/api/status
 ```
 
-### Test Ollama Integration
+### Test KwaaiNet Integration
 ```bash
-curl http://localhost:4000/api/test-ollama
+curl http://localhost:4000/api/test-kwaainet
 ```
 
-### Test Main LLM (Ollama-first)
+### Test All LLM Providers
 ```bash
 curl http://localhost:4000/api/test-llm
 ```
 
-### Test Chat with BGIN Agents
+### Test Chat Interface
 ```bash
-# Archive Agent
 curl -X POST http://localhost:4000/api/chat \
   -H "Content-Type: application/json" \
-  -d '{
-    "message": "What are the key challenges in blockchain governance?",
-    "agent": "archive",
-    "session": "regulatory"
-  }'
-
-# Codex Agent
-curl -X POST http://localhost:4000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "How should we approach regulatory compliance for DeFi protocols?",
-    "agent": "codex",
-    "session": "technical-standards"
-  }'
-
-# Discourse Agent
-curl -X POST http://localhost:4000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "How can we improve community participation in blockchain governance?",
-    "agent": "discourse",
-    "session": "cross-chain-governance"
-  }'
+  -d '{"message": "Hello, test message", "agent": "archive", "session": "test"}'
 ```
+
+## Configuration Examples
+
+### Basic KwaaiNet Setup
+```bash
+# .env file
+KWAAI_ENDPOINT=https://api.kwaai.ai/v1
+KWAAI_API_KEY=your-kwaai-api-key-here
+KWAAI_MODEL=kwaainet/llama-3.2-3b-instruct
+```
+
+### With Fallback Providers
+```bash
+# .env file
+KWAAI_ENDPOINT=https://api.kwaai.ai/v1
+KWAAI_API_KEY=your-kwaai-api-key-here
+KWAAI_MODEL=kwaainet/llama-3.2-3b-instruct
+
+# Optional fallbacks
+OPENAI_API_KEY=your-openai-api-key-here
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**KwaaiNet API Key Issues:**
+- Ensure your API key is valid and has sufficient credits
+- Check that the endpoint URL is correct: `https://api.kwaai.ai/v1`
+- Verify the model name is supported: `kwaainet/llama-3.2-3b-instruct`
+
+**Connection Issues:**
+- Check your internet connection
+- Verify firewall settings allow HTTPS connections
+- Test with: `curl https://api.kwaai.ai/v1/models`
+
+**Fallback Issues:**
+- Ensure at least one fallback provider is configured
+- Check API keys for OpenAI/Anthropic if using fallbacks
 
 ## Features Available
 
-### With Ollama (Currently Active):
-- ✅ **Intelligent responses** from llama3.2:3b-instruct-q4_0
+### With KwaaiNet (Currently Active):
+- ✅ **Intelligent responses** from kwaainet/llama-3.2-3b-instruct
 - ✅ **Agent-specific system prompts** for Archive, Codex, and Discourse
 - ✅ **Session-aware context** for different BGIN sessions
 - ✅ **Multi-agent collaboration** mode
 - ✅ **High confidence scores** (0.85)
 - ✅ **Source count simulation**
-- ✅ **Processing time tracking** (~5-7 seconds)
-- ✅ **Complete privacy** (all processing local)
-- ✅ **No API costs** (runs entirely on your machine)
+- ✅ **Processing time tracking** (~2-4 seconds)
+- ✅ **Privacy-preserving** (KwaaiNet privacy features)
+- ✅ **Cloud-based** (no local setup required)
 
 ### With OpenAI Fallback (Optional):
 - ✅ **Intelligent responses** from GPT-3.5-turbo

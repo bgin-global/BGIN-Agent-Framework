@@ -51,7 +51,7 @@ router.post('/create', asyncHandler(async (req, res) => {
       config
     );
 
-    res.json({
+    return res.json({
       success: true,
       workingGroup,
       message: 'Working group created successfully'
@@ -59,7 +59,7 @@ router.post('/create', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Working group creation failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Working group creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -73,7 +73,7 @@ router.get('/', asyncHandler(async (req, res) => {
   try {
     const workingGroups = workingGroupManager.getAllWorkingGroups();
 
-    res.json({
+    return res.json({
       success: true,
       workingGroups,
       count: workingGroups.length,
@@ -82,7 +82,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to retrieve working groups:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to retrieve working groups',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -104,7 +104,7 @@ router.get('/:workingGroupId', asyncHandler(async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       workingGroup,
       message: 'Working group retrieved successfully'
@@ -112,7 +112,7 @@ router.get('/:workingGroupId', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to retrieve working group:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to retrieve working group',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -176,7 +176,7 @@ router.post('/:workingGroupId/upload', upload.single('document'), asyncHandler(a
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       documentUpload,
       message: 'Document uploaded and processed successfully'
@@ -184,7 +184,7 @@ router.post('/:workingGroupId/upload', upload.single('document'), asyncHandler(a
 
   } catch (error) {
     logger.error('Document upload failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Document upload failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -211,7 +211,7 @@ router.get('/:workingGroupId/documents', asyncHandler(async (req, res) => {
     const offsetNum = offset ? parseInt(offset as string) : 0;
     const paginatedDocuments = documents.slice(offsetNum, offsetNum + limitNum);
 
-    res.json({
+    return res.json({
       success: true,
       documents: paginatedDocuments,
       total: documents.length,
@@ -222,7 +222,7 @@ router.get('/:workingGroupId/documents', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to retrieve documents:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to retrieve documents',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -245,7 +245,7 @@ router.get('/:workingGroupId/documents/:documentId', asyncHandler(async (req, re
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       document,
       message: 'Document retrieved successfully'
@@ -253,7 +253,7 @@ router.get('/:workingGroupId/documents/:documentId', asyncHandler(async (req, re
 
   } catch (error) {
     logger.error('Failed to retrieve document:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to retrieve document',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -293,7 +293,7 @@ router.post('/:workingGroupId/query', asyncHandler(async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       result,
       message: 'Query processed successfully'
@@ -301,7 +301,7 @@ router.post('/:workingGroupId/query', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Working group query failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Working group query failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -339,7 +339,7 @@ router.put('/:workingGroupId/config', asyncHandler(async (req, res) => {
     // TODO: Update in database
     // await workingGroupManager.updateWorkingGroup(workingGroup);
 
-    res.json({
+    return res.json({
       success: true,
       workingGroup,
       message: 'Configuration updated successfully'
@@ -347,7 +347,7 @@ router.put('/:workingGroupId/config', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Configuration update failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Configuration update failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -383,7 +383,7 @@ router.get('/:workingGroupId/models', asyncHandler(async (req, res) => {
       ]
     };
 
-    res.json({
+    return res.json({
       success: true,
       models,
       message: 'Available models retrieved successfully'
@@ -391,7 +391,7 @@ router.get('/:workingGroupId/models', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to retrieve models:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to retrieve models',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -416,7 +416,7 @@ router.get('/:workingGroupId/documents/:documentId/disclosure', asyncHandler(asy
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       disclosure: document.intelligenceDisclosure,
       message: 'Intelligence disclosure retrieved successfully'
@@ -424,7 +424,7 @@ router.get('/:workingGroupId/documents/:documentId/disclosure', asyncHandler(asy
 
   } catch (error) {
     logger.error('Failed to retrieve intelligence disclosure:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to retrieve intelligence disclosure',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -454,7 +454,7 @@ router.post('/:workingGroupId/query/disclosure', asyncHandler(async (req, res) =
       }
     );
 
-    res.json({
+    return res.json({
       success: true,
       disclosure: result.intelligenceDisclosure,
       message: 'Intelligence disclosure retrieved successfully'
@@ -462,7 +462,7 @@ router.post('/:workingGroupId/query/disclosure', asyncHandler(async (req, res) =
 
   } catch (error) {
     logger.error('Failed to retrieve intelligence disclosure:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to retrieve intelligence disclosure',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -478,7 +478,7 @@ router.get('/health', asyncHandler(async (req, res) => {
   try {
     const isHealthy = await workingGroupManager.healthCheck();
 
-    res.json({
+    return res.json({
       success: true,
       healthy: isHealthy,
       message: isHealthy ? 'All systems healthy' : 'Some systems unhealthy'
@@ -486,7 +486,7 @@ router.get('/health', asyncHandler(async (req, res) => {
 
   } catch (error) {
     logger.error('Health check failed:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Health check failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });

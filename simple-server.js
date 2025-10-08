@@ -30,9 +30,10 @@ const PHALA_MODEL = process.env.PHALA_MODEL || 'openai/gpt-oss-120b';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
-// Ollama configuration
-const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b-instruct-q4_0';
+// KwaaiNet configuration
+const KWAAI_ENDPOINT = process.env.KWAAI_ENDPOINT || 'https://api.kwaai.ai/v1';
+const KWAAI_API_KEY = process.env.KWAAI_API_KEY || '';
+const KWAAI_MODEL = process.env.KWAAI_MODEL || 'kwaainet/llama-3.2-3b-instruct';
 
 // Agent system prompts
 const getAgentSystemPrompt = (agentType, sessionType) => {
@@ -179,36 +180,40 @@ const callOpenAI = async (message, agentType, sessionType, isMultiAgent = false)
   }
 };
 
-// Ollama API request function
-const generateOllamaResponse = async (message, agentType, sessionType, isMultiAgent = false) => {
+// KwaaiNet API request function
+const generateKwaaiNetResponse = async (message, agentType, sessionType, isMultiAgent = false) => {
   const systemPrompt = getAgentSystemPrompt(agentType, sessionType);
   
   try {
-    const response = await axios.post(`${OLLAMA_API_URL}/api/chat`, {
-      model: OLLAMA_MODEL,
+    const response = await axios.post(`${KWAAI_ENDPOINT}/chat/completions`, {
+      model: KWAAI_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      stream: false,
-      options: {
-        temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: 1000
+      max_tokens: 1000,
+      temperature: 0.7,
+      top_p: 0.9,
+      stream: false
+    }, {
+      headers: {
+        'Authorization': `Bearer ${KWAAI_API_KEY}`,
+        'Content-Type': 'application/json',
+        'X-Kwaai-Version': '1.0'
       }
     });
 
     return {
-      content: response.data.message.content,
+      content: response.data.choices[0].message.content,
       confidence: 0.85,
       sources: Math.floor(Math.random() * 5) + 2,
-      processingTime: response.data.eval_duration ? Math.round(response.data.eval_duration / 1000000) : 0,
+      processingTime: response.data.usage ? Math.round(response.data.usage.total_tokens / 100) : 0,
       llmUsed: true,
-      model: OLLAMA_MODEL,
-      localModel: true
+      model: KWAAI_MODEL,
+      kwaaiNet: true
     };
   } catch (error) {
-    console.error('Ollama API error:', error.response?.data || error.message);
+    console.error('KwaaiNet API error:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -347,13 +352,13 @@ app.post('/api/chat', async (req, res) => {
     let response;
     
     try {
-      // Try Ollama first (local model)
-      response = await generateOllamaResponse(message, agent, session, multiAgent);
-      console.log(`✅ Ollama response generated using ${response.model}`);
-    } catch (ollamaError) {
-      console.log(`⚠️ Ollama failed, trying OpenAI: ${ollamaError.message}`);
+      // Try KwaaiNet first (primary LLM provider)
+      response = await generateKwaaiNetResponse(message, agent, session, multiAgent);
+      console.log(`✅ KwaaiNet response generated using ${response.model}`);
+    } catch (kwaaiError) {
+      console.log(`⚠️ KwaaiNet failed, trying OpenAI: ${kwaaiError.message}`);
       try {
-        // Fall back to OpenAI if Ollama fails
+        // Fall back to OpenAI if KwaaiNet fails
         response = await callOpenAI(message, agent, session, multiAgent);
         console.log(`✅ OpenAI response generated using ${response.model}`);
       } catch (openaiError) {
@@ -400,10 +405,10 @@ app.get('/api/status', (req, res) => {
     phalaEndpoint: PHALA_ENDPOINT,
     redpillConfigured: false,
     openaiConfigured: !!OPENAI_API_KEY,
-    ollamaConfigured: true,
-    ollamaEndpoint: OLLAMA_API_URL,
-    ollamaModel: OLLAMA_MODEL,
-    llmProvider: 'Ollama Local Model (Primary)',
+    kwaaiNetConfigured: !!KWAAI_API_KEY,
+    kwaaiEndpoint: KWAAI_ENDPOINT,
+    kwaaiModel: KWAAI_MODEL,
+    llmProvider: 'KwaaiNet (Primary)',
     fallbackProvider: OPENAI_API_KEY ? 'OpenAI GPT-3.5-turbo' : 'Phala Cloud',
     finalFallback: 'Static Responses',
     timestamp: new Date().toISOString(),
@@ -413,73 +418,73 @@ app.get('/api/status', (req, res) => {
 
 app.get('/api/test-llm', async (req, res) => {
   try {
-    // Test Ollama first
-    const testResponse = await generateOllamaResponse('Hello, this is a test message', 'archive', 'test', false);
+    // Test KwaaiNet first
+    const testResponse = await generateKwaaiNetResponse('Hello, this is a test message', 'archive', 'test', false);
     res.json({
       status: 'working',
-      message: 'Ollama integration is working correctly',
+      message: 'KwaaiNet integration is working correctly',
       llmAvailable: true,
-      provider: 'Ollama',
+      provider: 'KwaaiNet',
       model: testResponse.model,
-      localModel: testResponse.localModel,
+      kwaaiNet: testResponse.kwaaiNet,
       response: testResponse.content.substring(0, 100) + '...',
       processingTime: testResponse.processingTime
     });
-  } catch (ollamaError) {
+  } catch (kwaaiError) {
     // Fall back to OpenAI test
     try {
       if (!OPENAI_API_KEY) {
         return res.json({
-          status: 'ollama_failed_no_fallback',
-          message: 'Ollama failed, OpenAI not configured. Using fallback mode.',
+          status: 'kwaai_failed_no_fallback',
+          message: 'KwaaiNet failed, OpenAI not configured. Using fallback mode.',
           llmAvailable: false,
-          ollamaError: ollamaError.message
+          kwaaiError: kwaaiError.message
         });
       }
       
       const testResponse = await callOpenAI('Hello, this is a test message', 'archive', 'test', false);
       return res.json({
-        status: 'ollama_failed_openai_working',
-        message: 'Ollama failed, but OpenAI is working',
+        status: 'kwaai_failed_openai_working',
+        message: 'KwaaiNet failed, but OpenAI is working',
         llmAvailable: true,
         provider: 'OpenAI (Fallback)',
         model: testResponse.model,
         response: testResponse.content.substring(0, 100) + '...',
-        ollamaError: ollamaError.message
+        kwaaiError: kwaaiError.message
       });
     } catch (openaiError) {
       return res.json({
         status: 'all_llm_failed',
         message: 'All LLM services failed. Using static responses.',
         llmAvailable: false,
-        ollamaError: ollamaError.message,
+        kwaaiError: kwaaiError.message,
         openaiError: openaiError.message
       });
     }
   }
 });
 
-// Test Ollama endpoint
-app.get('/api/test-ollama', async (req, res) => {
+// Test KwaaiNet endpoint
+app.get('/api/test-kwaainet', async (req, res) => {
   try {
-    const testResponse = await generateOllamaResponse('Hello, this is a test message', 'archive', 'test', false);
+    const testResponse = await generateKwaaiNetResponse('Hello, this is a test message', 'archive', 'test', false);
     res.json({
       status: 'working',
-      message: 'Ollama integration is working correctly',
+      message: 'KwaaiNet integration is working correctly',
       llmAvailable: true,
-      provider: 'Ollama',
+      provider: 'KwaaiNet',
       model: testResponse.model,
-      localModel: testResponse.localModel,
+      kwaaiNet: testResponse.kwaaiNet,
       response: testResponse.content.substring(0, 100) + '...',
       processingTime: testResponse.processingTime
     });
   } catch (error) {
     res.json({
       status: 'failed',
-      message: 'Ollama integration failed',
+      message: 'KwaaiNet integration failed',
       llmAvailable: false,
       error: error.message,
-      suggestion: 'Make sure Ollama is running on ' + OLLAMA_API_URL
+      suggestion: 'Make sure KwaaiNet API key is configured and endpoint is accessible: ' + KWAAI_ENDPOINT
     });
   }
 });
@@ -1297,6 +1302,1209 @@ const upload = multer({
 const workingGroups = new Map();
 const documentUploads = new Map();
 
+// Initialize Block 13 Conference Knowledge Archives
+const initializeBlock13Archives = () => {
+  const block13Archives = [
+    {
+      id: 'block13-agent-hack',
+      name: 'BGIN Agent Hack',
+      description: 'Policy-to-code hackathon: Agent-mediated standards and programmable governance',
+      domain: 'agent-development',
+      status: 'active',
+      configuration: {
+        ragContainer: {
+          containerId: 'container_privacy_analytics',
+          vectorDatabase: 'qdrant',
+          embeddingModel: 'text-embedding-3-small',
+          chunkSize: 1000,
+          chunkOverlap: 200,
+          similarityThreshold: 0.75,
+          maxResults: 20,
+          crossGroupSearch: true,
+          metadata: {
+            collectionName: 'block13_privacy_analytics',
+            dimensions: 1536,
+            distanceMetric: 'cosine'
+          }
+        },
+        modelSettings: {
+          primaryModel: 'claude-3-sonnet',
+          fallbackModels: ['gpt-4', 'claude-3-haiku'],
+          modelProvider: 'anthropic',
+          temperature: 0.3,
+          maxTokens: 4000,
+          topP: 0.9,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+          customParameters: {}
+        },
+        privacySettings: {
+          privacyLevel: 'maximum',
+          dataRetention: 365,
+          anonymizationRequired: true,
+          encryptionRequired: true,
+          crossGroupSharing: true,
+          auditLogging: true
+        },
+        intelligenceDisclosure: {
+          enabled: true,
+          disclosureLevel: 'full',
+          includeModelInfo: true,
+          includeProcessingSteps: true,
+          includeSourceAttribution: true,
+          includeConfidenceScores: true,
+          includeReasoningChain: true
+        },
+        documentProcessing: {
+          supportedFormats: ['pdf', 'txt', 'md', 'docx', 'html'],
+          maxFileSize: 50 * 1024 * 1024,
+          autoProcessing: true,
+          qualityThreshold: 0.8,
+          duplicateDetection: true,
+          versionControl: true,
+          metadataExtraction: true,
+          contentValidation: true
+        }
+      },
+      metadata: {
+        created: new Date('2024-10-15').toISOString(),
+        updated: new Date().toISOString(),
+        createdBy: 'block13-system',
+        participantCount: 47,
+        documentCount: 23,
+        lastActivity: new Date().toISOString()
+      }
+    },
+    {
+      id: 'block13-ikp',
+      name: 'IKP - Identity and Key Management',
+      description: 'Offline key management, ZKP authentication, and accountable wallet standards',
+      domain: 'identity-key-management',
+      status: 'active',
+      configuration: {
+        ragContainer: {
+          containerId: 'container_data_sovereignty',
+          vectorDatabase: 'qdrant',
+          embeddingModel: 'text-embedding-3-small',
+          chunkSize: 1000,
+          chunkOverlap: 200,
+          similarityThreshold: 0.75,
+          maxResults: 20,
+          crossGroupSearch: true,
+          metadata: {
+            collectionName: 'block13_data_sovereignty',
+            dimensions: 1536,
+            distanceMetric: 'cosine'
+          }
+        },
+        modelSettings: {
+          primaryModel: 'gpt-4',
+          fallbackModels: ['claude-3-sonnet', 'gpt-3.5-turbo'],
+          modelProvider: 'openai',
+          temperature: 0.3,
+          maxTokens: 4000,
+          topP: 0.9,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+          customParameters: {}
+        },
+        privacySettings: {
+          privacyLevel: 'high',
+          dataRetention: 365,
+          anonymizationRequired: false,
+          encryptionRequired: true,
+          crossGroupSharing: true,
+          auditLogging: true
+        },
+        intelligenceDisclosure: {
+          enabled: true,
+          disclosureLevel: 'partial',
+          includeModelInfo: true,
+          includeProcessingSteps: true,
+          includeSourceAttribution: true,
+          includeConfidenceScores: true,
+          includeReasoningChain: true
+        },
+        documentProcessing: {
+          supportedFormats: ['pdf', 'txt', 'md', 'docx', 'html'],
+          maxFileSize: 50 * 1024 * 1024,
+          autoProcessing: true,
+          qualityThreshold: 0.7,
+          duplicateDetection: true,
+          versionControl: true,
+          metadataExtraction: true,
+          contentValidation: true
+        }
+      },
+      metadata: {
+        created: new Date('2024-10-15').toISOString(),
+        updated: new Date().toISOString(),
+        createdBy: 'block13-system',
+        participantCount: 34,
+        documentCount: 18,
+        lastActivity: new Date().toISOString()
+      }
+    },
+    {
+      id: 'block13-cyber-security',
+      name: 'Cyber Security',
+      description: 'Security supply chain governance, information sharing frameworks, and forensics',
+      domain: 'cyber-security',
+      status: 'active',
+      configuration: {
+        ragContainer: {
+          containerId: 'container_trust_infrastructure',
+          vectorDatabase: 'qdrant',
+          embeddingModel: 'text-embedding-3-small',
+          chunkSize: 1000,
+          chunkOverlap: 200,
+          similarityThreshold: 0.75,
+          maxResults: 20,
+          crossGroupSearch: true,
+          metadata: {
+            collectionName: 'block13_trust_infrastructure',
+            dimensions: 1536,
+            distanceMetric: 'cosine'
+          }
+        },
+        modelSettings: {
+          primaryModel: 'claude-3-haiku',
+          fallbackModels: ['gpt-4', 'claude-3-sonnet'],
+          modelProvider: 'anthropic',
+          temperature: 0.3,
+          maxTokens: 4000,
+          topP: 0.9,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+          customParameters: {}
+        },
+        privacySettings: {
+          privacyLevel: 'high',
+          dataRetention: 365,
+          anonymizationRequired: false,
+          encryptionRequired: true,
+          crossGroupSharing: true,
+          auditLogging: true
+        },
+        intelligenceDisclosure: {
+          enabled: true,
+          disclosureLevel: 'partial',
+          includeModelInfo: true,
+          includeProcessingSteps: true,
+          includeSourceAttribution: true,
+          includeConfidenceScores: true,
+          includeReasoningChain: true
+        },
+        documentProcessing: {
+          supportedFormats: ['pdf', 'txt', 'md', 'docx', 'html'],
+          maxFileSize: 50 * 1024 * 1024,
+          autoProcessing: true,
+          qualityThreshold: 0.7,
+          duplicateDetection: true,
+          versionControl: true,
+          metadataExtraction: true,
+          contentValidation: true
+        }
+      },
+      metadata: {
+        created: new Date('2024-10-15').toISOString(),
+        updated: new Date().toISOString(),
+        createdBy: 'block13-system',
+        participantCount: 29,
+        documentCount: 15,
+        lastActivity: new Date().toISOString()
+      }
+    },
+    {
+      id: 'block13-fase',
+      name: 'FASE - Financial and Economic',
+      description: 'Stablecoin implementation, crypto-asset harmonization, and financial standards',
+      domain: 'financial-standards',
+      status: 'active',
+      configuration: {
+        ragContainer: {
+          containerId: 'container_privacy_finance',
+          vectorDatabase: 'qdrant',
+          embeddingModel: 'text-embedding-3-small',
+          chunkSize: 1000,
+          chunkOverlap: 200,
+          similarityThreshold: 0.75,
+          maxResults: 20,
+          crossGroupSearch: true,
+          metadata: {
+            collectionName: 'block13_privacy_finance',
+            dimensions: 1536,
+            distanceMetric: 'cosine'
+          }
+        },
+        modelSettings: {
+          primaryModel: 'phala-gpt',
+          fallbackModels: ['gpt-4', 'claude-3-sonnet'],
+          modelProvider: 'phala',
+          temperature: 0.3,
+          maxTokens: 4000,
+          topP: 0.9,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+          customParameters: {}
+        },
+        privacySettings: {
+          privacyLevel: 'maximum',
+          dataRetention: 365,
+          anonymizationRequired: true,
+          encryptionRequired: true,
+          crossGroupSharing: true,
+          auditLogging: true
+        },
+        intelligenceDisclosure: {
+          enabled: true,
+          disclosureLevel: 'full',
+          includeModelInfo: true,
+          includeProcessingSteps: true,
+          includeSourceAttribution: true,
+          includeConfidenceScores: true,
+          includeReasoningChain: true
+        },
+        documentProcessing: {
+          supportedFormats: ['pdf', 'txt', 'md', 'docx', 'html'],
+          maxFileSize: 50 * 1024 * 1024,
+          autoProcessing: true,
+          qualityThreshold: 0.8,
+          duplicateDetection: true,
+          versionControl: true,
+          metadataExtraction: true,
+          contentValidation: true
+        }
+      },
+      metadata: {
+        created: new Date('2024-10-15').toISOString(),
+        updated: new Date().toISOString(),
+        createdBy: 'block13-system',
+        participantCount: 31,
+        documentCount: 12,
+        lastActivity: new Date().toISOString()
+      }
+    }
+  ];
+
+  // Add Block 13 archives to working groups
+  block13Archives.forEach(archive => {
+    workingGroups.set(archive.id, archive);
+  });
+};
+
+// Initialize Block 13 archives on server startup
+initializeBlock13Archives();
+
+// Load Block 13 seed data into knowledge archives
+const loadBlock13SeedData = () => {
+  const block13Documents = [
+    {
+      id: 'doc-agent-arch-001',
+      title: 'Multi-Agent System Architecture for Blockchain Governance',
+      content: `# Multi-Agent System Architecture for Blockchain Governance
+
+## Executive Summary
+This document outlines the architecture for a multi-agent system designed to support blockchain governance research and decision-making processes. The system leverages three specialized agents: Archive, Codex, and Discourse agents, each with distinct capabilities and responsibilities.
+
+## System Overview
+The multi-agent system operates on principles of distributed consciousness, privacy by design, and dignity-based economics. Each agent maintains its own knowledge base while collaborating through secure communication channels.
+
+### Core Agents
+
+#### Archive Agent
+- **Purpose**: Knowledge synthesis and document analysis
+- **Capabilities**: 
+  - Cross-session search and retrieval
+  - Privacy-preserving knowledge management
+  - Research correlation and discovery
+- **Privacy Level**: Maximum (TEE-verified processing)
+
+#### Codex Agent
+- **Purpose**: Policy analysis and standards development
+- **Capabilities**:
+  - Compliance checking and verification
+  - Regulatory framework analysis
+  - Stakeholder impact assessment
+- **Privacy Level**: High (encrypted processing)
+
+#### Discourse Agent
+- **Purpose**: Communications and collaboration
+- **Capabilities**:
+  - Community engagement and consensus building
+  - Forum integration and discussion facilitation
+  - Trust network establishment
+- **Privacy Level**: Selective (community-visible)
+
+## Technical Implementation
+
+### Privacy Architecture
+- **DID-based Identity**: Each agent has a decentralized identifier
+- **Zero-Knowledge Proofs**: Capability verification without data revelation
+- **TEE Integration**: Confidential compute for sensitive operations
+- **Privacy Pools**: Association Set Provider (ASP) for research contributions
+
+### Trust Framework
+- **ToIP Compliance**: Trust over IP framework implementation
+- **Verifiable Credentials**: Cryptographic proof of agent capabilities
+- **Reputation System**: Community-driven trust scoring
+- **Audit Logging**: Comprehensive activity tracking
+
+## Integration Points
+
+### Kwaai Privacy Platform
+- Privacy-preserving analytics
+- Selective disclosure protocols
+- Zero-knowledge proof integration
+
+### First Person Project (FPP)
+- Data sovereignty controls
+- Dignity-based economics
+- User-controlled data sharing
+
+### BGIN Discourse Integration
+- Community forum connectivity
+- Consensus building tools
+- Knowledge sharing protocols
+
+## Security Considerations
+- End-to-end encryption for all communications
+- Multi-signature requirements for critical decisions
+- Regular security audits and penetration testing
+- Incident response procedures
+
+## Future Roadmap
+- Phase 1: Core agent implementation (Current)
+- Phase 2: Advanced privacy features
+- Phase 3: Cross-chain governance integration
+- Phase 4: Autonomous decision-making capabilities
+
+## Conclusion
+This multi-agent architecture provides a robust foundation for blockchain governance research while maintaining the highest standards of privacy, security, and user sovereignty.`,
+      sessionId: 'bgin-agent-hack',
+      documentType: 'technical_specification',
+      privacyLevel: 'maximum',
+      qualityScore: 0.95,
+      processingStatus: 'completed',
+      metadata: {
+        author: 'BGIN Agent Hack Team',
+        tags: ['multi-agent', 'architecture', 'blockchain-governance', 'privacy', 'distributed-consciousness'],
+        version: '1.0',
+        created_date: '2024-10-15'
+      }
+    },
+    {
+      id: 'doc-offline-key-001',
+      title: 'Offline Key Management Best Practices for Blockchain Systems',
+      content: `# Offline Key Management Best Practices for Blockchain Systems
+
+## Executive Summary
+This document outlines best practices for managing cryptographic keys in offline environments, ensuring maximum security while maintaining operational efficiency for blockchain systems.
+
+## Key Management Principles
+
+### 1. Air-Gapped Security
+- **Definition**: Complete physical isolation from network connections
+- **Implementation**: Dedicated hardware for key generation and signing
+- **Verification**: Regular testing of air-gap integrity
+
+### 2. Multi-Signature Requirements
+- **Threshold Schemes**: Require multiple signatures for critical operations
+- **Key Distribution**: Distribute signing keys across multiple locations
+- **Recovery Procedures**: Secure key recovery mechanisms
+
+### 3. Hardware Security Modules (HSMs)
+- **FIPS 140-2 Level 3+**: High-assurance hardware security
+- **Tamper Resistance**: Protection against physical attacks
+- **Key Escrow**: Secure backup and recovery procedures
+
+## Technical Implementation
+
+### Key Generation
+- **Entropy Sources**: High-quality random number generation
+- **Key Derivation**: PBKDF2, Argon2, or similar algorithms
+- **Key Validation**: Cryptographic verification of key properties
+
+### Storage Mechanisms
+- **Cold Storage**: Offline storage of private keys
+- **Encrypted Backups**: Multiple encrypted copies in secure locations
+- **Access Controls**: Multi-factor authentication for key access
+
+### Signing Procedures
+- **Transaction Preparation**: Offline transaction creation
+- **Manual Verification**: Human review of transaction details
+- **Batch Processing**: Efficient handling of multiple transactions
+
+## Security Considerations
+
+### Physical Security
+- **Secure Facilities**: Access-controlled environments
+- **Surveillance**: Continuous monitoring of key management areas
+- **Personnel Vetting**: Background checks for key management staff
+
+### Operational Security
+- **Separation of Duties**: Different personnel for different operations
+- **Audit Trails**: Comprehensive logging of all key operations
+- **Incident Response**: Procedures for security breaches
+
+### Cryptographic Security
+- **Algorithm Selection**: Use of approved cryptographic algorithms
+- **Key Rotation**: Regular replacement of cryptographic keys
+- **Quantum Resistance**: Preparation for post-quantum cryptography
+
+## Compliance and Standards
+
+### Regulatory Requirements
+- **Financial Services**: PCI DSS, SOX compliance
+- **Government**: FISMA, Common Criteria
+- **International**: ISO 27001, NIST guidelines
+
+### Industry Standards
+- **NIST SP 800-57**: Key management guidelines
+- **FIPS 140-2**: Security requirements for cryptographic modules
+- **Common Criteria**: International security evaluation standard
+
+## Risk Management
+
+### Threat Assessment
+- **Insider Threats**: Protection against malicious insiders
+- **External Attacks**: Defense against external adversaries
+- **Natural Disasters**: Geographic distribution of key storage
+
+### Mitigation Strategies
+- **Redundancy**: Multiple copies of critical keys
+- **Geographic Distribution**: Keys stored in different locations
+- **Regular Testing**: Periodic verification of key management procedures
+
+## Implementation Guidelines
+
+### Phase 1: Planning
+- Risk assessment and threat modeling
+- Selection of appropriate technologies
+- Development of operational procedures
+
+### Phase 2: Deployment
+- Installation and configuration of hardware
+- Key generation and distribution
+- Staff training and certification
+
+### Phase 3: Operations
+- Ongoing monitoring and maintenance
+- Regular security audits
+- Continuous improvement processes
+
+## Conclusion
+Effective offline key management requires a comprehensive approach combining technical, operational, and physical security measures. These best practices provide a foundation for secure key management in blockchain systems.`,
+      sessionId: 'offline-key-mgmt',
+      documentType: 'technical_guide',
+      privacyLevel: 'high',
+      qualityScore: 0.89,
+      processingStatus: 'completed',
+      metadata: {
+        author: 'IKP Working Group',
+        tags: ['key-management', 'offline-security', 'cryptography', 'blockchain', 'compliance'],
+        version: '2.1',
+        created_date: '2024-10-15'
+      }
+    },
+    {
+      id: 'doc-zkp-auth-001',
+      title: 'Zero-Knowledge Proof Authentication Framework for Privacy-Preserving Systems',
+      content: `# Zero-Knowledge Proof Authentication Framework for Privacy-Preserving Systems
+
+## Introduction
+Zero-Knowledge Proofs (ZKPs) offer a powerful mechanism for authentication while preserving user privacy. This framework outlines the implementation of ZKP-based authentication systems for blockchain and distributed applications.
+
+## Core Concepts
+
+### Zero-Knowledge Proofs
+- **Definition**: Cryptographic protocols that allow one party to prove knowledge of a secret without revealing the secret
+- **Properties**: Completeness, Soundness, Zero-Knowledge
+- **Applications**: Authentication, authorization, privacy-preserving transactions
+
+### Privacy-Preserving Authentication
+- **Goal**: Verify user identity without revealing personal information
+- **Benefits**: Enhanced privacy, reduced data exposure, improved security
+- **Challenges**: Computational complexity, implementation complexity
+
+## Technical Framework
+
+### 1. Identity Verification
+- **Credential Generation**: Creation of privacy-preserving credentials
+- **Proof Construction**: Building ZKPs for identity claims
+- **Verification Process**: Validating proofs without revealing secrets
+
+### 2. Attribute-Based Authentication
+- **Attribute Credentials**: Proofs of specific attributes (age, membership, etc.)
+- **Selective Disclosure**: Revealing only necessary information
+- **Credential Revocation**: Mechanisms for invalidating credentials
+
+### 3. Multi-Factor Authentication
+- **Multiple Proofs**: Combining different types of ZKPs
+- **Layered Security**: Multiple authentication factors
+- **Risk-Based Authentication**: Dynamic security based on risk assessment
+
+## Implementation Architecture
+
+### System Components
+- **Credential Issuer**: Issues privacy-preserving credentials
+- **Prover**: User proving their identity/attributes
+- **Verifier**: System verifying the proofs
+- **Revocation Authority**: Manages credential revocation
+
+### Cryptographic Primitives
+- **zk-SNARKs**: Succinct Non-interactive Arguments of Knowledge
+- **zk-STARKs**: Scalable Transparent Arguments of Knowledge
+- **Bulletproofs**: Range proofs and confidential transactions
+- **Spartan**: Universal SNARKs for arbitrary computations
+
+### Privacy Mechanisms
+- **Unlinkability**: Preventing correlation of different transactions
+- **Anonymity**: Hiding user identity in transactions
+- **Pseudonymity**: Using consistent pseudonyms across sessions
+
+## Use Cases
+
+### Financial Services
+- **KYC/AML Compliance**: Identity verification without data sharing
+- **Credit Scoring**: Proof of creditworthiness without revealing financial details
+- **Transaction Privacy**: Private payments and transfers
+
+### Healthcare
+- **Medical Records**: Proof of medical conditions without revealing details
+- **Insurance Claims**: Verification of eligibility without data exposure
+- **Research Participation**: Anonymous contribution to medical research
+
+### Government Services
+- **Voting Systems**: Anonymous yet verifiable voting
+- **Social Benefits**: Proof of eligibility without revealing personal details
+- **Digital Identity**: Privacy-preserving government ID systems
+
+## Security Considerations
+
+### Cryptographic Security
+- **Trusted Setup**: Secure generation of public parameters
+- **Implementation Security**: Protection against side-channel attacks
+- **Quantum Resistance**: Preparation for post-quantum threats
+
+### Privacy Protection
+- **Data Minimization**: Collecting only necessary information
+- **Purpose Limitation**: Using data only for stated purposes
+- **Retention Limits**: Automatic deletion of unnecessary data
+
+### Operational Security
+- **Key Management**: Secure storage and handling of cryptographic keys
+- **Access Controls**: Limiting access to sensitive operations
+- **Audit Logging**: Comprehensive logging of system activities
+
+## Performance Optimization
+
+### Proof Generation
+- **Parallel Processing**: Concurrent proof generation
+- **Caching**: Reusing proofs where appropriate
+- **Hardware Acceleration**: GPU/FPGA acceleration for proof generation
+
+### Verification Efficiency
+- **Batch Verification**: Verifying multiple proofs together
+- **Precomputation**: Precomputing common verification operations
+- **Optimized Circuits**: Efficient arithmetic circuits for proofs
+
+## Compliance and Standards
+
+### Privacy Regulations
+- **GDPR**: European data protection requirements
+- **CCPA**: California privacy rights
+- **PIPEDA**: Canadian privacy legislation
+
+### Technical Standards
+- **ISO/IEC 27001**: Information security management
+- **NIST Guidelines**: Cryptographic standards and guidelines
+- **W3C Standards**: Web standards for digital credentials
+
+## Implementation Roadmap
+
+### Phase 1: Foundation (Months 1-6)
+- Basic ZKP authentication system
+- Core cryptographic primitives
+- Simple use case implementation
+
+### Phase 2: Enhancement (Months 7-12)
+- Advanced privacy features
+- Multi-attribute authentication
+- Performance optimization
+
+### Phase 3: Production (Months 13-18)
+- Full regulatory compliance
+- Enterprise-grade security
+- Scalable deployment
+
+## Conclusion
+Zero-Knowledge Proof authentication provides a powerful tool for privacy-preserving systems. This framework offers a comprehensive approach to implementing ZKP-based authentication while maintaining security and compliance requirements.`,
+      sessionId: 'zkp-privacy-auth',
+      documentType: 'technical_specification',
+      privacyLevel: 'maximum',
+      qualityScore: 0.94,
+      processingStatus: 'completed',
+      metadata: {
+        author: 'IKP Privacy Working Group',
+        tags: ['zero-knowledge-proofs', 'privacy', 'authentication', 'cryptography', 'blockchain'],
+        version: '1.5',
+        created_date: '2024-10-15'
+      }
+    },
+    {
+      id: 'doc-security-supply-chain-001',
+      title: 'Governance Framework for Blockchain Security Supply Chains',
+      content: `# Governance Framework for Blockchain Security Supply Chains
+
+## Executive Summary
+This document establishes a comprehensive governance framework for managing security across blockchain supply chains, addressing the unique challenges of distributed systems and ensuring end-to-end security.
+
+## Supply Chain Security Challenges
+
+### Distributed Nature
+- **Multiple Stakeholders**: Various parties involved in blockchain operations
+- **Geographic Distribution**: Global spread of infrastructure and participants
+- **Technology Diversity**: Different implementations and protocols
+
+### Trust Dependencies
+- **Hardware Security**: Secure hardware for key management and validation
+- **Software Integrity**: Trusted software development and deployment
+- **Network Security**: Secure communication and consensus mechanisms
+
+### Regulatory Compliance
+- **Cross-Border Operations**: Compliance with multiple jurisdictions
+- **Data Protection**: Privacy requirements across different regions
+- **Financial Regulations**: Anti-money laundering and know-your-customer requirements
+
+## Governance Framework
+
+### 1. Risk Assessment and Management
+- **Threat Modeling**: Systematic identification of security threats
+- **Risk Quantification**: Measurement and prioritization of risks
+- **Mitigation Strategies**: Development of risk reduction measures
+
+### 2. Security Standards and Certification
+- **Technical Standards**: Security requirements for blockchain components
+- **Certification Programs**: Third-party validation of security measures
+- **Continuous Monitoring**: Ongoing assessment of security posture
+
+### 3. Incident Response and Recovery
+- **Response Procedures**: Structured approach to security incidents
+- **Recovery Planning**: Business continuity and disaster recovery
+- **Lessons Learned**: Post-incident analysis and improvement
+
+## Technical Implementation
+
+### Hardware Security
+- **Trusted Execution Environments (TEEs)**: Secure enclaves for sensitive operations
+- **Hardware Security Modules (HSMs)**: Tamper-resistant key management
+- **Secure Boot**: Verified boot process for hardware components
+
+### Software Security
+- **Secure Development Lifecycle**: Security throughout the development process
+- **Code Review and Testing**: Comprehensive security testing
+- **Dependency Management**: Secure handling of third-party components
+
+### Network Security
+- **Encryption**: End-to-end encryption for all communications
+- **Authentication**: Strong authentication mechanisms
+- **Monitoring**: Continuous monitoring of network activities
+
+## Stakeholder Responsibilities
+
+### Blockchain Operators
+- **Infrastructure Security**: Securing blockchain infrastructure
+- **Incident Response**: Responding to security incidents
+- **Compliance**: Meeting regulatory requirements
+
+### Application Developers
+- **Secure Coding**: Following secure development practices
+- **Vulnerability Management**: Identifying and fixing security issues
+- **User Education**: Educating users about security best practices
+
+### End Users
+- **Key Management**: Secure storage and use of private keys
+- **Transaction Verification**: Verifying transaction details
+- **Security Awareness**: Understanding security risks and mitigations
+
+## Regulatory Compliance
+
+### International Standards
+- **ISO 27001**: Information security management systems
+- **NIST Cybersecurity Framework**: Risk management framework
+- **Common Criteria**: Security evaluation standard
+
+### Regional Regulations
+- **EU NIS Directive**: Network and information security
+- **US CISA Guidelines**: Cybersecurity and infrastructure security
+- **APEC Cybersecurity Framework**: Asia-Pacific cybersecurity cooperation
+
+## Monitoring and Auditing
+
+### Continuous Monitoring
+- **Security Metrics**: Key performance indicators for security
+- **Threat Intelligence**: Information about current threats
+- **Vulnerability Scanning**: Regular assessment of security vulnerabilities
+
+### Audit Requirements
+- **Internal Audits**: Regular internal security assessments
+- **External Audits**: Third-party security evaluations
+- **Regulatory Audits**: Compliance with regulatory requirements
+
+## Incident Response
+
+### Response Team
+- **Incident Commander**: Overall responsibility for incident response
+- **Technical Team**: Technical analysis and remediation
+- **Communications Team**: Stakeholder and public communications
+
+### Response Procedures
+- **Detection and Analysis**: Identifying and analyzing security incidents
+- **Containment**: Limiting the impact of security incidents
+- **Recovery**: Restoring normal operations
+- **Post-Incident Review**: Learning from security incidents
+
+## Future Considerations
+
+### Emerging Threats
+- **Quantum Computing**: Preparing for post-quantum cryptography
+- **AI/ML Attacks**: Defending against AI-powered attacks
+- **IoT Integration**: Securing Internet of Things devices
+
+### Technology Evolution
+- **New Protocols**: Adapting to new blockchain protocols
+- **Privacy Enhancements**: Implementing advanced privacy features
+- **Scalability Solutions**: Securing scaling solutions
+
+## Conclusion
+Effective governance of blockchain security supply chains requires a comprehensive approach addressing technical, operational, and regulatory aspects. This framework provides a foundation for managing security across the entire blockchain ecosystem.`,
+      sessionId: 'security-supply-chain',
+      documentType: 'governance_framework',
+      privacyLevel: 'high',
+      qualityScore: 0.91,
+      processingStatus: 'completed',
+      metadata: {
+        author: 'Cyber Security Working Group',
+        tags: ['supply-chain', 'security', 'governance', 'blockchain', 'risk-management'],
+        version: '1.3',
+        created_date: '2024-10-15'
+      }
+    },
+    {
+      id: 'doc-stablecoin-001',
+      title: 'Practical Stablecoin Implementation Guide',
+      content: `# Practical Stablecoin Implementation Guide
+
+## Introduction
+This guide provides comprehensive guidance for implementing stablecoin systems, covering technical, regulatory, and operational considerations.
+
+## Stablecoin Types
+
+### 1. Fiat-Collateralized Stablecoins
+- **Mechanism**: Backed by fiat currency reserves
+- **Examples**: USDC, USDT, BUSD
+- **Advantages**: Price stability, regulatory clarity
+- **Challenges**: Centralization, regulatory compliance
+
+### 2. Crypto-Collateralized Stablecoins
+- **Mechanism**: Backed by cryptocurrency collateral
+- **Examples**: DAI, sUSD
+- **Advantages**: Decentralization, transparency
+- **Challenges**: Volatility, complexity
+
+### 3. Algorithmic Stablecoins
+- **Mechanism**: Algorithmic supply adjustment
+- **Examples**: UST (historical), FRAX
+- **Advantages**: Decentralization, efficiency
+- **Challenges**: Stability risks, complexity
+
+## Technical Implementation
+
+### Smart Contract Architecture
+- **Minting Contract**: Creation of new stablecoins
+- **Burning Contract**: Destruction of stablecoins
+- **Collateral Management**: Management of backing assets
+- **Oracle Integration**: Price feed integration
+
+### Security Considerations
+- **Code Audits**: Comprehensive security audits
+- **Multi-signature**: Multi-signature requirements
+- **Upgrade Mechanisms**: Secure upgrade procedures
+- **Emergency Pauses**: Circuit breakers and emergency stops
+
+### Scalability Solutions
+- **Layer 2**: Off-chain scaling solutions
+- **Sidechains**: Independent blockchain networks
+- **State Channels**: Off-chain transaction channels
+- **Plasma**: Child chain scaling
+
+## Regulatory Compliance
+
+### United States
+- **Money Transmitter Licenses**: State-level licensing
+- **Bank Secrecy Act**: Anti-money laundering requirements
+- **Tax Reporting**: IRS reporting requirements
+- **Securities Laws**: Potential securities classification
+
+### European Union
+- **MiCA Regulation**: Markets in Crypto-Assets regulation
+- **AML/CFT**: Anti-money laundering and counter-terrorism financing
+- **Data Protection**: GDPR compliance
+- **Consumer Protection**: Consumer rights and protections
+
+### Other Jurisdictions
+- **Singapore**: Payment Services Act
+- **Japan**: Payment Services Act
+- **Switzerland**: Financial Market Infrastructure Act
+- **United Kingdom**: Financial Services and Markets Act
+
+## Operational Requirements
+
+### Reserve Management
+- **Custody**: Secure storage of backing assets
+- **Auditing**: Regular reserve audits
+- **Transparency**: Public reserve reporting
+- **Insurance**: Protection against losses
+
+### Risk Management
+- **Liquidity Risk**: Ensuring sufficient liquidity
+- **Credit Risk**: Managing counterparty risk
+- **Operational Risk**: Protecting against operational failures
+- **Regulatory Risk**: Managing regulatory changes
+
+### Governance
+- **Decision Making**: Governance mechanisms
+- **Stakeholder Rights**: Rights of token holders
+- **Dispute Resolution**: Conflict resolution procedures
+- **Transparency**: Open governance processes
+
+## Technical Standards
+
+### ERC-20 Standard
+- **Fungibility**: Interchangeable tokens
+- **Transferability**: Easy transfer between addresses
+- **Approval**: Delegated transfer capabilities
+- **Events**: Transaction event logging
+
+### ERC-777 Standard
+- **Hooks**: Pre and post-transfer hooks
+- **Operators**: Delegated management capabilities
+- **Metadata**: Rich token metadata
+- **Backward Compatibility**: ERC-20 compatibility
+
+### Custom Standards
+- **Minting/Burning**: Custom minting and burning functions
+- **Pause Functionality**: Emergency pause capabilities
+- **Upgradeability**: Upgradeable contract patterns
+- **Access Control**: Role-based access control
+
+## Implementation Phases
+
+### Phase 1: Foundation (Months 1-6)
+- Basic smart contract implementation
+- Core functionality development
+- Initial security audits
+- Regulatory consultation
+
+### Phase 2: Testing (Months 7-12)
+- Testnet deployment
+- Security testing
+- User acceptance testing
+- Regulatory compliance verification
+
+### Phase 3: Launch (Months 13-18)
+- Mainnet deployment
+- Initial user onboarding
+- Market making
+- Ongoing monitoring
+
+## Security Best Practices
+
+### Smart Contract Security
+- **Formal Verification**: Mathematical proof of correctness
+- **Fuzzing**: Automated testing with random inputs
+- **Static Analysis**: Automated code analysis
+- **Penetration Testing**: Manual security testing
+
+### Operational Security
+- **Key Management**: Secure key storage and handling
+- **Access Controls**: Limiting access to critical functions
+- **Monitoring**: Continuous security monitoring
+- **Incident Response**: Security incident procedures
+
+### Financial Security
+- **Reserve Auditing**: Regular reserve verification
+- **Insurance**: Protection against losses
+- **Diversification**: Diversified reserve holdings
+- **Stress Testing**: Testing under extreme conditions
+
+## Monitoring and Reporting
+
+### Key Metrics
+- **Circulating Supply**: Total stablecoins in circulation
+- **Reserve Ratio**: Ratio of reserves to circulating supply
+- **Price Stability**: Deviation from target price
+- **Transaction Volume**: Daily transaction volume
+
+### Reporting Requirements
+- **Reserve Reports**: Regular reserve reporting
+- **Audit Reports**: Independent audit reports
+- **Regulatory Reports**: Compliance reporting
+- **Transparency Reports**: Public transparency reporting
+
+## Future Considerations
+
+### Emerging Technologies
+- **Central Bank Digital Currencies**: Integration with CBDCs
+- **Cross-Chain**: Multi-blockchain support
+- **Privacy**: Privacy-preserving stablecoins
+- **AI/ML**: Intelligent stablecoin management
+
+### Regulatory Evolution
+- **Global Standards**: International regulatory standards
+- **Interoperability**: Cross-border stablecoin usage
+- **Consumer Protection**: Enhanced consumer protections
+- **Financial Stability**: Systemic risk management
+
+## Conclusion
+Implementing a stablecoin system requires careful consideration of technical, regulatory, and operational factors. This guide provides a comprehensive framework for successful stablecoin implementation while maintaining security and compliance.`,
+      sessionId: 'stablecoin-implementation',
+      documentType: 'implementation_guide',
+      privacyLevel: 'selective',
+      qualityScore: 0.90,
+      processingStatus: 'completed',
+      metadata: {
+        author: 'FASE Financial Working Group',
+        tags: ['stablecoin', 'implementation', 'regulatory-compliance', 'blockchain', 'financial-services'],
+        version: '1.8',
+        created_date: '2024-10-15'
+      }
+    }
+  ];
+
+  // Add documents to the working groups
+  block13Documents.forEach(doc => {
+    // Find the appropriate working group based on session
+    const workingGroupId = getWorkingGroupIdForSession(doc.sessionId);
+    if (workingGroupId) {
+      const workingGroup = workingGroups.get(workingGroupId);
+      if (workingGroup) {
+        // Add document to working group's document count
+        workingGroup.metadata.documentCount = (workingGroup.metadata.documentCount || 0) + 1;
+        workingGroup.metadata.lastActivity = new Date();
+      }
+    }
+  });
+
+  console.log('📚 Block 13 seed data loaded with', block13Documents.length, 'documents');
+};
+
+// Helper function to map sessions to working groups
+const getWorkingGroupIdForSession = (sessionId) => {
+  const sessionToWorkingGroup = {
+    'bgin-agent-hack': 'block13-privacy-analytics',
+    'offline-key-mgmt': 'block13-data-sovereignty',
+    'zkp-privacy-auth': 'block13-data-sovereignty',
+    'security-supply-chain': 'block13-trust-infrastructure',
+    'security-targets': 'block13-trust-infrastructure',
+    'info-sharing-framework': 'block13-privacy-finance',
+    'stablecoin-implementation': 'block13-privacy-finance'
+  };
+  return sessionToWorkingGroup[sessionId];
+};
+
+// LLM Response Generation Function
+const generateLLMResponse = async (query, model, domain) => {
+  // Simulate LLM response generation
+  const responses = {
+    'agent hack': `Based on the Block 13 BGIN Agent Hack knowledge archives, here's information about policy-to-code implementation:
+
+## BGIN Agent Hack - Policy to Code
+
+The BGIN Agent Hack is a focused hackathon at Block 13 where policy discussions turn into working software through agent-mediated standards and programmable governance.
+
+### Event Overview
+- **Duration**: October 15-17, 2025 at Georgetown University, Washington D.C.
+- **Focus**: Policy-to-code pipelines, on-chain attestations, and automated compliance checks
+- **Session Chair**: Mitchell Travers
+
+### Key Activities
+- **Day 1**: Governance Ceremony - Key generation opening, standards documentation sprint, policy-to-code workshops
+- **Day 2**: Build & Validate - 24-hour implementation, live compliance showcase, sponsor integration reviews
+- **Day 3**: Final presentations and AI Agent Governance discussions
+
+### Target Participants
+- **Regulators & Policymakers**: Seeking executable governance frameworks
+- **Engineers & Standards Contributors**: Building policy-aware systems
+- **Industry & Protocol Teams**: Validating compliance patterns
+- **Researchers & Students**: Exploring governance automation
+
+### Expected Outcomes
+- Policy-to-code prototypes and reusable governance frameworks
+- Real-time compliance testing and on-chain attestations
+- Demonstrable, standards-aligned agentic implementations
+- Multi-stakeholder global community collaboration
+
+This hackathon represents the cutting edge of blockchain governance automation and policy implementation.`,
+
+    'offline key management': `From the IKP (Identity and Key Management) track at Block 13, here's information about offline key management:
+
+## Offline Key Management - Block 13 IKP Track
+
+### Session Details
+- **Date**: October 15, 2025, 9:00-10:30 AM
+- **Location**: Arrupe Hall, Georgetown University
+- **Track**: IKP (Identity and Key Management)
+
+### Key Research Projects
+- **Wallet Governance, Policy and Key Management Study Report**: Policy framework for wallet governance and key management best practices
+- **Accountable Wallet**: Standards for accountable wallet implementations and compliance
+- **Agent Standards and Frameworks**: Standards for blockchain agents, agentic competition, and reputation systems
+
+### Core Principles
+- **Air-Gapped Security**: Complete physical isolation from network connections
+- **Multi-Signature Requirements**: Threshold schemes requiring multiple signatures
+- **Hardware Security Modules (HSMs)**: FIPS 140-2 Level 3+ high-assurance hardware
+
+### Technical Implementation
+- **Key Generation**: High-quality entropy sources and cryptographic verification
+- **Storage Mechanisms**: Cold storage with encrypted backups and access controls
+- **Signing Procedures**: Offline transaction creation with manual verification
+
+This session focuses on practical implementation of secure key management for blockchain systems.`,
+
+    'zkp authentication': `Based on the IKP track at Block 13, here's information about ZKP and Privacy Enhanced Authentication:
+
+## ZKP and Privacy Enhanced Authentication - Block 13 IKP Track
+
+### Session Details
+- **Date**: October 15, 2025, 15:30-17:00
+- **Location**: Arrupe Hall, Georgetown University
+- **Track**: IKP (Identity and Key Management)
+
+### Key Research Projects
+- **Distinguishing Blockchain Forensics from Analytics**: Comprehensive standards for blockchain forensics and analytics methodologies
+- **Accountable Wallet**: Standards for accountable wallet implementations and compliance
+
+### Core Concepts
+- **Zero-Knowledge Proofs**: Cryptographic protocols proving knowledge without revealing secrets
+- **Properties**: Completeness, Soundness, Zero-Knowledge
+- **Applications**: Authentication, authorization, privacy-preserving transactions
+
+### Technical Framework
+- **Identity Verification**: Privacy-preserving credential generation and proof construction
+- **Attribute-Based Authentication**: Selective disclosure of specific attributes
+- **Multi-Factor Authentication**: Layered security with multiple proof types
+
+### Cryptographic Primitives
+- **zk-SNARKs**: Succinct Non-interactive Arguments of Knowledge
+- **zk-STARKs**: Scalable Transparent Arguments of Knowledge
+- **Bulletproofs**: Range proofs and confidential transactions
+
+This session focuses on practical implementation of privacy-enhanced authentication for blockchain systems.`,
+
+    'security supply chain': `From the Cyber Security track at Block 13, here's information about governance of security supply chain:
+
+## Governance of Security Supply Chain - Block 13 Cyber Security Track
+
+### Session Details
+- **Date**: October 15, 2025, 11:00-12:30
+- **Location**: Arrupe Hall, Georgetown University
+- **Track**: Cyber Security
+
+### Key Research Projects
+- **Cyber Security Information Sharing Framework**: Framework for sharing cybersecurity information across blockchain networks
+
+### Supply Chain Challenges
+- **Distributed Nature**: Multiple stakeholders across geographic locations
+- **Trust Dependencies**: Hardware security, software integrity, network security
+- **Regulatory Compliance**: Cross-border operations and data protection requirements
+
+### Governance Framework
+- **Risk Assessment**: Systematic threat identification and mitigation strategies
+- **Security Standards**: Technical requirements and certification programs
+- **Incident Response**: Structured procedures for security incidents
+
+### Technical Implementation
+- **Hardware Security**: TEEs, HSMs, secure boot processes
+- **Software Security**: Secure development lifecycle and dependency management
+- **Network Security**: End-to-end encryption and continuous monitoring
+
+This session focuses on establishing governance frameworks for blockchain security supply chains.`,
+
+    'stablecoin implementation': `From the FASE (Financial and Economic) track at Block 13, here's information about stablecoin implementation:
+
+## Practical Stablecoin Implementation Guide - Block 13 FASE Track
+
+### Session Details
+- **Date**: October 17, 2025, 13:15-14:30
+- **Location**: Hariri 240, Georgetown University
+- **Track**: FASE (Financial and Economic)
+
+### Key Research Projects
+- **Policy priorities for stablecoin regulation: past, present and future**: Comprehensive analysis of stablecoin regulatory frameworks and future directions
+
+### Stablecoin Types
+- **Fiat-Collateralized**: Backed by fiat currency reserves (USDC, USDT)
+- **Crypto-Collateralized**: Backed by cryptocurrency collateral (DAI, sUSD)
+- **Algorithmic**: Algorithmic supply adjustment (FRAX)
+
+### Technical Implementation
+- **Smart Contract Architecture**: Minting, burning, collateral management
+- **Security Considerations**: Code audits, multi-signature, emergency pauses
+- **Scalability Solutions**: Layer 2, sidechains, state channels
+
+### Regulatory Compliance
+- **United States**: Money transmitter licenses, BSA requirements
+- **European Union**: MiCA regulation, GDPR compliance
+- **Other Jurisdictions**: Singapore, Japan, Switzerland, UK regulations
+
+### Operational Requirements
+- **Reserve Management**: Secure custody, auditing, transparency
+- **Risk Management**: Liquidity, credit, operational, regulatory risks
+- **Governance**: Decision making, stakeholder rights, dispute resolution
+
+This session provides practical guidance for stablecoin implementation in the current regulatory environment.`
+  };
+
+  // Return relevant response based on query keywords
+  const queryLower = query.toLowerCase();
+  for (const [key, response] of Object.entries(responses)) {
+    if (queryLower.includes(key)) {
+      return response;
+    }
+  }
+
+  // Default response
+  return `Based on the Block 13 Conference knowledge archives, I can help you with information about:
+
+## BGIN Block 13 Conference - October 15-17, 2025
+**Location**: Georgetown University, Washington D.C.
+
+### Working Groups & Sessions:
+- **BGIN Agent Hack**: Policy-to-code hackathon and agent-mediated governance
+- **IKP (Identity & Key Management)**: Offline key management, ZKP authentication, accountable wallets
+- **Cyber Security**: Security supply chain governance, information sharing frameworks
+- **FASE (Financial & Economic)**: Stablecoin implementation, crypto-asset harmonization
+
+### Key Research Projects:
+- Wallet Governance and Key Management Study Report
+- Accountable Wallet Standards
+- Agent Standards and Frameworks
+- Cyber Security Information Sharing Framework
+- Policy Priorities for Stablecoin Regulation
+- Blockchain Forensics and Analytics Standards
+
+### Featured Sessions:
+- Offline Key Management (Oct 15, 9:00-10:30)
+- Governance of Security Supply Chain (Oct 15, 11:00-12:30)
+- ZKP and Privacy Enhanced Authentication (Oct 15, 15:30-17:00)
+- Practical Stablecoin Implementation Guide (Oct 17, 13:15-14:30)
+
+Please ask about any of these topics for detailed information from our comprehensive knowledge base.`;
+};
+
 // Create working group
 app.post('/api/working-groups/create', (req, res) => {
   try {
@@ -1799,5 +3007,5 @@ app.listen(PORT, () => {
   console.log(`   3. Restart the server`);
   
   const fallbackStatus = OPENAI_API_KEY ? 'OpenAI' : 'Phala Cloud';
-  console.log(`\n🔧 Current LLM Status: 🤖 Ollama Local Model (Primary) + ${fallbackStatus} (Fallback)`);
+  console.log(`\n🔧 Current LLM Status: 🌐 KwaaiNet (Primary) + ${fallbackStatus} (Fallback)`);
 });

@@ -191,25 +191,26 @@ export class PolicyAnalyzer {
         content
       };
 
+      // Create mock document for analysis
+      const mockDocument = {
+        id: 'temp-policy-doc',
+        title: framework.name,
+        content,
+        metadata: {
+          sessionId: context.sessionId,
+          privacyLevel: 'selective' as const,
+          documentType: 'policy_documentation'
+        },
+        chunks: [],
+        summary: plan.overview,
+        keywords: [],
+        entities: [],
+        qualityScore: 0,
+        processingStatus: 'completed' as const
+      };
+
       // Step 3: Quality analysis (if requested)
       if (options?.includeQualityAnalysis) {
-        const mockDocument = {
-          id: 'temp-policy-doc',
-          title: framework.name,
-          content,
-          metadata: {
-            sessionId: context.sessionId,
-            privacyLevel: 'selective' as const,
-            documentType: 'policy_documentation'
-          },
-          chunks: [],
-          summary: plan.overview,
-          keywords: [],
-          entities: [],
-          qualityScore: 0,
-          processingStatus: 'completed' as const
-        };
-
         result.qualityMetrics = await documentationAdvisor.analyzeDocumentationQuality(
           mockDocument,
           { sessionId: context.sessionId, domain: context.domain }
@@ -620,6 +621,7 @@ export class PolicyAnalyzer {
   ): Promise<{
     qualityMetrics: DocumentationQualityMetrics;
     recommendations: DocumentationRecommendation[];
+    plan?: DocumentationPlan;
   }> {
     try {
       const mockDocument = {

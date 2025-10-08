@@ -342,7 +342,7 @@ export class ModelSelectionService {
    * Calculate privacy score
    */
   private calculatePrivacyScore(capability: ModelCapability, criteria: ModelSelectionCriteria): number {
-    const privacyLevels = { 'minimal': 1, 'selective': 2, 'high': 3, 'maximum': 4 };
+    const privacyLevels = { 'minimal': 1, 'selective': 2, 'high': 3, 'maximum': 4, 'low': 1, 'medium': 2 };
     const modelPrivacy = privacyLevels[capability.privacy];
     const requiredPrivacy = privacyLevels[criteria.privacyLevel];
 

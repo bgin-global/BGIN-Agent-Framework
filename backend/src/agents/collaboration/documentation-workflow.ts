@@ -50,7 +50,7 @@ export interface DocumentationTask {
   title: string;
   description: string;
   type: 'research' | 'analysis' | 'writing' | 'review' | 'validation';
-  status: 'pending' | 'in_progress' | 'completed' | 'blocked';
+  status: 'pending' | 'in_progress' | 'completed' | 'blocked' | 'failed';
   assignedAgent: 'archive' | 'codex' | 'discourse';
   priority: 'low' | 'medium' | 'high' | 'critical';
   estimatedEffort: number; // in minutes
@@ -367,14 +367,14 @@ export class DocumentationWorkflowManager extends EventEmitter {
     task: DocumentationTask,
     context: { sessionId: string; domain: string }
   ): Promise<any> {
+    // Get frameworks for both analysis and writing tasks
+    const frameworks = policyAnalyzer.getAllFrameworks();
+    if (frameworks.length === 0) {
+      throw new Error('No frameworks available for analysis');
+    }
+
     switch (task.type) {
       case 'analysis':
-        // Get a framework for analysis
-        const frameworks = policyAnalyzer.getAllFrameworks();
-        if (frameworks.length === 0) {
-          throw new Error('No frameworks available for analysis');
-        }
-
         const framework = frameworks[0];
         return await policyAnalyzer.analyzePolicyFramework(
           framework,

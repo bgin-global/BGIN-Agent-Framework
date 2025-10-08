@@ -911,9 +911,15 @@ Provide comprehensive, actionable recommendations with extended reasoning and de
           title: plan.title,
           content: fullContent,
           metadata: {
+            title: plan.title,
+            author: 'System',
+            source: 'Generated',
             sessionId: context.sessionId,
             privacyLevel: 'selective',
-            documentType: 'generated_documentation'
+            tags: [],
+            language: 'en',
+            category: 'documentation',
+            version: '1.0.0'
           },
           chunks: [],
           summary: plan.overview,
@@ -931,6 +937,30 @@ Provide comprehensive, actionable recommendations with extended reasoning and de
 
       // Step 5: Generate recommendations (if requested)
       if (options?.generateRecommendations && result.qualityMetrics) {
+        // Create a mock document for recommendations
+        const mockDocument: ProcessedDocument = {
+          id: 'mock_doc',
+          title: 'Mock Document',
+          content: 'Mock document content for recommendations',
+          metadata: {
+            title: 'Mock Document',
+            author: 'System',
+            source: 'Internal',
+            sessionId: context.sessionId,
+            privacyLevel: 'selective',
+            tags: [],
+            language: 'en',
+            category: 'general',
+            version: '1.0.0'
+          },
+          chunks: [],
+          summary: 'Mock document summary',
+          keywords: [],
+          entities: [],
+          qualityScore: 0.8,
+          processingStatus: 'completed'
+        };
+        
         result.recommendations = await documentationAdvisor.generateRecommendations(
           mockDocument,
           result.qualityMetrics,
@@ -1106,7 +1136,28 @@ Provide comprehensive, actionable recommendations with extended reasoning and de
       const documents: ProcessedDocument[] = [];
       for (const result of searchResults) {
         if (result.document) {
-          documents.push(result.document);
+          // Convert SearchResult document to ProcessedDocument
+          const processedDoc: ProcessedDocument = {
+            id: result.document.id,
+            title: result.document.title,
+            content: result.content,
+            metadata: {
+              title: result.document.title,
+              author: 'Unknown',
+              source: 'Search Result',
+              sessionId: result.metadata.sessionId,
+              privacyLevel: result.metadata.privacyLevel as 'maximum' | 'high' | 'selective' | 'minimal',
+              tags: result.document.keywords || [],
+              language: 'en'
+            },
+            chunks: [],
+            summary: result.document.summary,
+            keywords: result.document.keywords || [],
+            entities: [],
+            qualityScore: result.document.qualityScore,
+            processingStatus: 'completed'
+          };
+          documents.push(processedDoc);
         }
       }
 

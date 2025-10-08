@@ -450,6 +450,61 @@ export class LocalApiService {
       throw error;
     }
   }
+
+  /**
+   * Upload document to knowledge archives
+   */
+  async uploadDocument(
+    file: File,
+    workingGroupId: string,
+    title: string,
+    author: string,
+    tags: string[],
+    modelOverride?: string
+  ): Promise<any> {
+    try {
+      console.log(`📄 Uploading document to working group: ${workingGroupId}`);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('author', author);
+      formData.append('tags', JSON.stringify(tags));
+      formData.append('modelOverride', modelOverride || 'Use default model');
+
+      const response = await fetch(`${API_BASE_URL}/working-groups/${workingGroupId}/upload`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        return await response.json();
+      } else {
+        throw new Error(`Failed to upload document: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Failed to upload document:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get working groups for document upload
+   */
+  async getWorkingGroups(): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/working-groups`);
+      
+      if (response.ok) {
+        return await response.json();
+      } else {
+        throw new Error(`Failed to get working groups: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Failed to get working groups:', error);
+      throw error;
+    }
+  }
 }
 
 export default LocalApiService;

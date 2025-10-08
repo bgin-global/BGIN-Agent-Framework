@@ -22,6 +22,8 @@ export interface DocumentMetadata {
   originalUrl?: string;
   tags?: string[];
   language?: string;
+  category?: string;
+  version?: string;
 }
 
 export interface DocumentChunk {

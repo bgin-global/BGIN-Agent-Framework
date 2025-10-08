@@ -814,3 +814,4 @@ export class DocumentationVersioningManager extends EventEmitter {
 
 // Singleton instance
 export const documentationVersioningManager = new DocumentationVersioningManager();
+
