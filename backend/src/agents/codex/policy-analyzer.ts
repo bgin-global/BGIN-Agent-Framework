@@ -417,26 +417,72 @@ export class PolicyAnalyzer {
   }> {
     try {
       const prompt = `
-        Analyze the following policy framework for compliance, risks, and recommendations.
+        **IMPORTANT: Provide comprehensive, detailed policy analysis with extended reasoning. When referencing specific policy elements, include thorough analysis, context, and implications.**
+
+        Analyze the following policy framework for compliance, risks, and recommendations with detailed reasoning and comprehensive analysis.
         
         Framework: ${framework.name}
         Jurisdiction: ${framework.jurisdiction}
         Domain: ${framework.domain}
         Content: ${JSON.stringify(framework.content)}
         
-        Provide analysis in JSON format:
+        **Analysis Requirements:**
+        
+        1. **Comprehensive Compliance Assessment**: Provide detailed analysis including:
+           - Specific compliance requirements and how they are addressed
+           - Detailed evaluation of each policy component
+           - Cross-referencing with relevant regulations and standards
+           - Identification of compliance strengths and weaknesses
+           - Assessment of implementation feasibility and challenges
+        
+        2. **Detailed Risk Analysis**: Thorough risk assessment including:
+           - Identification of specific risks and their potential impact
+           - Analysis of risk likelihood and severity
+           - Consideration of cascading and systemic risks
+           - Evaluation of risk mitigation measures
+           - Assessment of residual risks and their implications
+        
+        3. **Strengths Analysis**: Comprehensive identification of strengths including:
+           - Specific policy elements that are particularly strong
+           - Detailed explanation of why these elements are effective
+           - Analysis of best practices and innovative approaches
+           - Consideration of stakeholder benefits and positive impacts
+           - Assessment of scalability and adaptability
+        
+        4. **Weaknesses Analysis**: Detailed identification of weaknesses including:
+           - Specific policy elements that need improvement
+           - Detailed explanation of why these elements are problematic
+           - Analysis of potential negative consequences
+           - Consideration of stakeholder concerns and impacts
+           - Assessment of implementation challenges and barriers
+        
+        5. **Gaps Analysis**: Comprehensive gap identification including:
+           - Specific areas where policy coverage is insufficient
+           - Detailed explanation of why these gaps are significant
+           - Analysis of potential consequences of these gaps
+           - Consideration of emerging issues and future needs
+           - Assessment of priority levels for addressing gaps
+        
+        6. **Recommendations**: Detailed, actionable recommendations including:
+           - Specific policy modifications and improvements
+           - Detailed implementation guidance and timelines
+           - Resource requirements and stakeholder involvement
+           - Risk mitigation strategies and monitoring approaches
+           - Success metrics and evaluation criteria
+        
+        Provide analysis in JSON format with detailed explanations:
         {
           "complianceScore": 0.0-1.0,
           "riskLevel": "low|medium|high|critical",
-          "strengths": ["strength1", "strength2"],
-          "weaknesses": ["weakness1", "weakness2"],
-          "gaps": ["gap1", "gap2"],
-          "recommendations": ["rec1", "rec2"]
+          "strengths": ["detailed strength 1 with explanation", "detailed strength 2 with explanation"],
+          "weaknesses": ["detailed weakness 1 with explanation", "detailed weakness 2 with explanation"],
+          "gaps": ["detailed gap 1 with explanation", "detailed gap 2 with explanation"],
+          "recommendations": ["detailed recommendation 1 with implementation details", "detailed recommendation 2 with implementation details"]
         }
       `;
 
       const response = await llmClient.generateResponse(prompt, {
-        maxTokens: 1000,
+        maxTokens: 3000,
         temperature: 0.2
       });
 
@@ -469,29 +515,78 @@ export class PolicyAnalyzer {
   }> {
     try {
       const prompt = `
-        Assess the impact of this policy framework on different stakeholder groups.
+        **IMPORTANT: Provide comprehensive, detailed stakeholder impact assessment with extended reasoning. When analyzing specific policy elements, include thorough analysis of their implications for each stakeholder group.**
+
+        Assess the impact of this policy framework on different stakeholder groups with detailed analysis and comprehensive reasoning.
         
         Framework: ${framework.name}
         Jurisdiction: ${framework.jurisdiction}
         Domain: ${framework.domain}
         
-        Rate impact from 0-10 for each group:
+        **Stakeholder Impact Analysis Requirements:**
+        
+        1. **Regulators Impact Analysis**: Detailed assessment including:
+           - Specific regulatory oversight implications
+           - Analysis of compliance monitoring requirements
+           - Assessment of enforcement mechanisms and challenges
+           - Consideration of inter-agency coordination needs
+           - Evaluation of resource requirements and capacity needs
+           - Analysis of regulatory effectiveness and efficiency impacts
+        
+        2. **Industry Impact Analysis**: Comprehensive business impact assessment including:
+           - Specific operational changes and requirements
+           - Analysis of compliance costs and resource implications
+           - Assessment of competitive advantages and disadvantages
+           - Consideration of innovation and development impacts
+           - Evaluation of market access and participation effects
+           - Analysis of business model adaptation requirements
+        
+        3. **Civil Society Impact Analysis**: Detailed public impact assessment including:
+           - Specific effects on individual rights and freedoms
+           - Analysis of privacy and data protection implications
+           - Assessment of accessibility and inclusion impacts
+           - Consideration of democratic participation and transparency
+           - Evaluation of social equity and justice implications
+           - Analysis of community engagement and representation effects
+        
+        4. **Technical Community Impact Analysis**: Comprehensive technical impact assessment including:
+           - Specific implementation requirements and challenges
+           - Analysis of technical standards and protocol impacts
+           - Assessment of development and innovation implications
+           - Consideration of interoperability and compatibility requirements
+           - Evaluation of security and reliability considerations
+           - Analysis of technical expertise and skill requirements
+        
+        **Impact Rating Criteria:**
+        - 0-2: Minimal impact, minor adjustments required
+        - 3-4: Low impact, some operational changes needed
+        - 5-6: Moderate impact, significant changes required
+        - 7-8: High impact, major operational transformation needed
+        - 9-10: Critical impact, fundamental changes required
+        
+        Rate impact from 0-10 for each group with detailed justification:
         - Regulators: How much does this affect regulatory oversight?
         - Industry: How much does this affect business operations?
         - Civil Society: How much does this affect public rights and freedoms?
         - Technical Community: How much does this affect technical implementation?
         
-        Respond in JSON format:
+        Respond in JSON format with detailed explanations:
         {
           "regulators": 0-10,
           "industry": 0-10,
           "civilSociety": 0-10,
-          "technicalCommunity": 0-10
+          "technicalCommunity": 0-10,
+          "reasoning": {
+            "regulators": "detailed explanation of regulatory impact",
+            "industry": "detailed explanation of business impact",
+            "civilSociety": "detailed explanation of public impact",
+            "technicalCommunity": "detailed explanation of technical impact"
+          }
         }
       `;
 
       const response = await llmClient.generateResponse(prompt, {
-        maxTokens: 300,
+        maxTokens: 2000,
         temperature: 0.3
       });
 

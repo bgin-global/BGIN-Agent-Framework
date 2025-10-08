@@ -464,7 +464,7 @@ export class EnhancedRAGEngine {
       const prompt = this.buildSynthesisPrompt(context, sourcesText);
       
       const response = await llmClient.generateResponse(prompt, {
-        maxTokens: context.synthesisMode === 'detailed' ? 2000 : 1000,
+        maxTokens: context.synthesisMode === 'detailed' ? 4000 : context.synthesisMode === 'analytical' ? 5000 : 3000,
         temperature: 0.3
       });
 
@@ -485,6 +485,8 @@ export class EnhancedRAGEngine {
   private buildSynthesisPrompt(context: SynthesisContext, sourcesText: string): string {
     const basePrompt = `You are an Archive Agent in the BGIN Multi-Agent Research System. Your role is to synthesize research findings and provide evidence-based responses while respecting privacy levels.
 
+**IMPORTANT: Provide comprehensive, detailed responses with extended reasoning. When referencing specific documents, include thorough analysis, context, and implications.**
+
 Session: ${context.sessionContext.sessionName} (${context.sessionContext.participantCount} participants)
 Query: ${context.query}
 Privacy Level: ${context.userContext.privacyLevel}
@@ -493,61 +495,208 @@ Synthesis Mode: ${context.synthesisMode}
 Sources:
 ${sourcesText}
 
+**Reasoning Framework:**
+1. Analyze each source document thoroughly
+2. Identify key themes, patterns, and relationships
+3. Consider multiple perspectives and potential implications
+4. Provide detailed explanations for your conclusions
+5. When referencing specific documents, explain WHY they are relevant and HOW they support your analysis
+
 Please provide a comprehensive response that:`;
 
     switch (context.synthesisMode) {
       case 'summary':
         return basePrompt + `
-1. Summarizes the key findings from the sources
-2. Maintains appropriate privacy levels
-3. Provides clear citations without revealing sensitive information
-4. Offers actionable insights for blockchain governance research
-5. Keeps the response concise and focused`;
+1. **Comprehensive Summary**: Provide a thorough summary of key findings from all sources, including:
+   - Main arguments and evidence presented
+   - Key data points and statistics
+   - Important quotes or excerpts (with proper attribution)
+   - Context and background information
+   - Relationships between different findings
+
+2. **Document Analysis**: For each referenced document, explain:
+   - What the document contains and its main purpose
+   - Why it's relevant to the query
+   - How it supports or contradicts other sources
+   - The credibility and recency of the information
+   - Any limitations or biases present
+
+3. **Privacy-Aware Citations**: Provide clear, detailed citations that:
+   - Reference specific sections or pages when possible
+   - Include document titles, authors, and publication dates
+   - Maintain appropriate privacy levels
+   - Enable verification without revealing sensitive information
+
+4. **Actionable Insights**: Offer specific, actionable insights including:
+   - Immediate implications for blockchain governance
+   - Recommended next steps or actions
+   - Areas requiring further investigation
+   - Potential policy or technical recommendations
+
+5. **Extended Reasoning**: Include your reasoning process:
+   - How you arrived at your conclusions
+   - What evidence supports each claim
+   - Alternative interpretations you considered
+   - Confidence levels for different assertions`;
 
       case 'detailed':
         return basePrompt + `
-1. Provides a detailed analysis of the sources
-2. Explains the relationships between different findings
-3. Discusses implications for blockchain governance
-4. Identifies potential areas for further research
-5. Maintains privacy while being comprehensive`;
+1. **Comprehensive Analysis**: Provide an exhaustive analysis including:
+   - Detailed examination of each source document
+   - In-depth exploration of methodologies and approaches
+   - Thorough analysis of data quality and reliability
+   - Critical evaluation of arguments and evidence
+   - Identification of gaps and limitations
+
+2. **Relationship Mapping**: Explain complex relationships including:
+   - How different findings connect and interact
+   - Causal relationships and dependencies
+   - Temporal sequences and historical context
+   - Cross-disciplinary connections and implications
+   - Potential feedback loops and systemic effects
+
+3. **Governance Implications**: Discuss detailed implications including:
+   - Specific impacts on different stakeholder groups
+   - Regulatory and policy considerations
+   - Technical implementation challenges
+   - Economic and social consequences
+   - Long-term strategic implications
+
+4. **Research Opportunities**: Identify specific research areas including:
+   - Detailed research questions that need investigation
+   - Methodological approaches for future studies
+   - Data collection requirements and challenges
+   - Collaboration opportunities with other researchers
+   - Funding and resource considerations
+
+5. **Extended Documentation**: Provide comprehensive documentation including:
+   - Detailed source analysis with page references
+   - Complete reasoning chains and logical flows
+   - Alternative interpretations and their merits
+   - Confidence assessments and uncertainty quantification
+   - Recommendations for further investigation`;
 
       case 'analytical':
         return basePrompt + `
-1. Performs critical analysis of the sources
-2. Identifies patterns, trends, and contradictions
-3. Evaluates the quality and reliability of information
-4. Provides strategic recommendations
-5. Suggests policy implications and next steps`;
+1. **Critical Analysis**: Perform rigorous critical analysis including:
+   - Systematic evaluation of source credibility and bias
+   - Identification of logical fallacies and weak arguments
+   - Assessment of evidence quality and sufficiency
+   - Analysis of underlying assumptions and premises
+   - Evaluation of methodological rigor and validity
+
+2. **Pattern Recognition**: Identify and analyze patterns including:
+   - Emerging trends and their significance
+   - Recurring themes across different sources
+   - Contradictions and inconsistencies
+   - Anomalies and outliers
+   - Predictive indicators and early warning signs
+
+3. **Strategic Assessment**: Provide strategic analysis including:
+   - SWOT analysis of current governance approaches
+   - Competitive landscape and positioning
+   - Risk assessment and mitigation strategies
+   - Opportunity identification and prioritization
+   - Long-term strategic planning considerations
+
+4. **Policy Recommendations**: Offer detailed policy recommendations including:
+   - Specific policy proposals with implementation details
+   - Regulatory framework modifications
+   - Institutional changes and governance reforms
+   - Technical standards and protocols
+   - Monitoring and evaluation mechanisms
+
+5. **Extended Reasoning**: Provide comprehensive reasoning including:
+   - Complete logical argumentation chains
+   - Evidence evaluation and weighting
+   - Alternative scenario analysis
+   - Sensitivity analysis and robustness testing
+   - Meta-analysis of the analytical process itself`;
 
       default:
         return basePrompt + `
-1. Synthesizes the relevant information from the sources
-2. Maintains appropriate privacy levels
-3. Provides clear citations without revealing sensitive information
-4. Offers actionable insights for blockchain governance research
-5. Suggests potential cross-session correlations if applicable`;
+1. **Comprehensive Synthesis**: Provide thorough synthesis including:
+   - Integration of information from all relevant sources
+   - Identification of key themes and patterns
+   - Analysis of relationships and dependencies
+   - Evaluation of evidence quality and reliability
+   - Consideration of multiple perspectives and viewpoints
+
+2. **Privacy-Aware Documentation**: Maintain privacy while providing:
+   - Detailed source references and citations
+   - Contextual information and background
+   - Verification pathways without sensitive data exposure
+   - Attribution that respects privacy requirements
+   - Transparent methodology and approach
+
+3. **Actionable Intelligence**: Offer specific, actionable insights including:
+   - Immediate implications and next steps
+   - Strategic recommendations and priorities
+   - Research opportunities and collaboration potential
+   - Policy and technical implementation guidance
+   - Risk assessment and mitigation strategies
+
+4. **Cross-Session Integration**: Identify and explain:
+   - Connections to other research sessions
+   - Cross-domain implications and applications
+   - Collaborative opportunities and synergies
+   - Knowledge transfer and replication potential
+   - Systemic and holistic considerations
+
+5. **Extended Reasoning**: Provide comprehensive reasoning including:
+   - Detailed analytical process and methodology
+   - Evidence evaluation and synthesis approach
+   - Alternative interpretations and their consideration
+   - Confidence levels and uncertainty quantification
+   - Recommendations for further investigation and validation`;
     }
   }
 
   private async generateInsights(context: SynthesisContext): Promise<string[]> {
     try {
-      const prompt = `Based on the following research context, generate 3-5 key insights for blockchain governance:
+      const prompt = `Based on the following research context, generate 3-5 comprehensive, detailed insights for blockchain governance:
 
 Query: ${context.query}
 Sources: ${context.sources.length} documents
 Session: ${context.sessionContext.sessionName}
 
-Focus on:
-- Emerging patterns or trends
-- Policy implications
-- Technical considerations
-- Governance challenges or opportunities
+**IMPORTANT: Provide detailed, well-reasoned insights with extended analysis. When referencing specific documents, include thorough explanations of their relevance and implications.**
 
-Provide concise, actionable insights.`;
+For each insight, provide:
+1. **Detailed Analysis**: Thorough examination of the insight including:
+   - Specific evidence and data supporting the insight
+   - Detailed explanation of why this insight is significant
+   - Context and background information
+   - Multiple perspectives and considerations
+
+2. **Document References**: When referencing specific documents, explain:
+   - What specific information from the document supports the insight
+   - Why this document is particularly relevant
+   - How it relates to other sources
+   - The credibility and recency of the information
+
+3. **Implications and Impact**: Detailed analysis of:
+   - Immediate implications for blockchain governance
+   - Long-term strategic implications
+   - Specific impacts on different stakeholder groups
+   - Potential risks and opportunities
+
+4. **Actionable Recommendations**: Specific, detailed recommendations including:
+   - Concrete next steps and actions
+   - Implementation considerations and challenges
+   - Resource requirements and timelines
+   - Success metrics and evaluation criteria
+
+Focus on:
+- Emerging patterns or trends with detailed analysis
+- Policy implications with specific recommendations
+- Technical considerations with implementation details
+- Governance challenges or opportunities with strategic analysis
+
+Provide comprehensive, actionable insights with extended reasoning.`;
 
       const response = await llmClient.generateResponse(prompt, {
-        maxTokens: 500,
+        maxTokens: 1500,
         temperature: 0.4
       });
 
@@ -565,22 +714,58 @@ Provide concise, actionable insights.`;
 
   private async generateRecommendations(context: SynthesisContext): Promise<string[]> {
     try {
-      const prompt = `Based on the research findings, provide 3-5 recommendations for the BGIN community:
+      const prompt = `Based on the research findings, provide 3-5 comprehensive, detailed recommendations for the BGIN community:
 
 Query: ${context.query}
 Session: ${context.sessionContext.sessionName}
 Sources: ${context.sources.length} documents
 
-Focus on:
-- Immediate actions or next steps
-- Areas requiring further research
-- Policy or technical recommendations
-- Community engagement opportunities
+**IMPORTANT: Provide detailed, well-reasoned recommendations with extended analysis. When referencing specific documents, include thorough explanations of their relevance and how they support the recommendations.**
 
-Provide specific, actionable recommendations.`;
+For each recommendation, provide:
+1. **Detailed Rationale**: Comprehensive explanation including:
+   - Specific evidence and data supporting the recommendation
+   - Detailed analysis of why this recommendation is necessary
+   - Context and background information
+   - Multiple perspectives and considerations
+
+2. **Document Evidence**: When referencing specific documents, explain:
+   - What specific information from the document supports the recommendation
+   - Why this document is particularly relevant
+   - How it relates to other sources and findings
+   - The credibility and recency of the supporting evidence
+
+3. **Implementation Details**: Specific, actionable implementation guidance including:
+   - Concrete steps and actions required
+   - Timeline and milestones
+   - Resource requirements and budget considerations
+   - Stakeholder involvement and coordination needs
+   - Risk assessment and mitigation strategies
+
+4. **Success Metrics**: Detailed evaluation criteria including:
+   - Specific, measurable outcomes
+   - Key performance indicators (KPIs)
+   - Monitoring and evaluation methods
+   - Success benchmarks and targets
+   - Long-term impact assessment
+
+5. **Community Impact**: Analysis of community benefits including:
+   - Specific benefits for different stakeholder groups
+   - Community engagement opportunities
+   - Knowledge sharing and collaboration potential
+   - Capacity building and skill development
+   - Long-term community value
+
+Focus on:
+- Immediate actions or next steps with detailed implementation plans
+- Areas requiring further research with specific research questions and methodologies
+- Policy or technical recommendations with detailed implementation guidance
+- Community engagement opportunities with specific engagement strategies
+
+Provide comprehensive, actionable recommendations with extended reasoning and detailed implementation guidance.`;
 
       const response = await llmClient.generateResponse(prompt, {
-        maxTokens: 400,
+        maxTokens: 1200,
         temperature: 0.3
       });
 

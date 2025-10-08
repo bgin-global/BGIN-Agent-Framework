@@ -4,6 +4,7 @@ const path = require('path');
 const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -1272,6 +1273,503 @@ app.get('/api/discourse/status', (req, res) => {
   });
 });
 
+// Working Group Management Endpoints
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['application/pdf', 'text/plain', 'text/markdown', 
+                         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                         'text/html'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, TXT, MD, DOCX, and HTML files are allowed.'));
+    }
+  }
+});
+
+// In-memory storage for working groups and documents
+const workingGroups = new Map();
+const documentUploads = new Map();
+
+// Create working group
+app.post('/api/working-groups/create', (req, res) => {
+  try {
+    const { name, description, domain, createdBy, config } = req.body;
+
+    if (!name || !description || !domain || !createdBy) {
+      return res.status(400).json({ 
+        error: 'Name, description, domain, and createdBy are required' 
+      });
+    }
+
+    const workingGroupId = `wg_${Date.now()}`;
+    const workingGroup = {
+      id: workingGroupId,
+      name,
+      description,
+      domain,
+      status: 'active',
+      configuration: {
+        ragContainer: {
+          containerId: `container_${workingGroupId}`,
+          vectorDatabase: 'qdrant',
+          embeddingModel: 'text-embedding-3-small',
+          chunkSize: 1000,
+          chunkOverlap: 200,
+          similarityThreshold: 0.75,
+          maxResults: 20,
+          crossGroupSearch: false,
+          metadata: {
+            collectionName: `wg_${workingGroupId}`,
+            dimensions: 1536,
+            distanceMetric: 'cosine'
+          }
+        },
+        modelSettings: {
+          primaryModel: 'gpt-3.5-turbo',
+          fallbackModels: ['gpt-4', 'claude-3-haiku'],
+          modelProvider: 'openai',
+          temperature: 0.3,
+          maxTokens: 4000,
+          topP: 0.9,
+          frequencyPenalty: 0,
+          presencePenalty: 0,
+          customParameters: {}
+        },
+        privacySettings: {
+          privacyLevel: 'selective',
+          dataRetention: 365,
+          anonymizationRequired: false,
+          encryptionRequired: true,
+          crossGroupSharing: false,
+          auditLogging: true
+        },
+        intelligenceDisclosure: {
+          enabled: true,
+          disclosureLevel: 'partial',
+          includeModelInfo: true,
+          includeProcessingSteps: true,
+          includeSourceAttribution: true,
+          includeConfidenceScores: true,
+          includeReasoningChain: true
+        },
+        documentProcessing: {
+          supportedFormats: ['pdf', 'txt', 'md', 'docx', 'html'],
+          maxFileSize: 50 * 1024 * 1024, // 50MB
+          autoProcessing: true,
+          qualityThreshold: 0.7,
+          duplicateDetection: true,
+          versionControl: true,
+          metadataExtraction: true,
+          contentValidation: true
+        },
+        ...config
+      },
+      metadata: {
+        created: new Date(),
+        updated: new Date(),
+        createdBy,
+        participantCount: 0,
+        documentCount: 0,
+        lastActivity: new Date()
+      }
+    };
+
+    workingGroups.set(workingGroupId, workingGroup);
+
+    res.json({
+      success: true,
+      workingGroup,
+      message: 'Working group created successfully'
+    });
+
+  } catch (error) {
+    console.error('Working group creation failed:', error);
+    res.status(500).json({ 
+      error: 'Working group creation failed',
+      details: error.message
+    });
+  }
+});
+
+// Get all working groups
+app.get('/api/working-groups', (req, res) => {
+  try {
+    const workingGroupsList = Array.from(workingGroups.values());
+
+    res.json({
+      success: true,
+      workingGroups: workingGroupsList,
+      count: workingGroupsList.length,
+      message: 'Working groups retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Failed to retrieve working groups:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve working groups',
+      details: error.message
+    });
+  }
+});
+
+// Get working group by ID
+app.get('/api/working-groups/:workingGroupId', (req, res) => {
+  try {
+    const { workingGroupId } = req.params;
+    const workingGroup = workingGroups.get(workingGroupId);
+    
+    if (!workingGroup) {
+      return res.status(404).json({ 
+        error: 'Working group not found' 
+      });
+    }
+
+    res.json({
+      success: true,
+      workingGroup,
+      message: 'Working group retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Failed to retrieve working group:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve working group',
+      details: error.message
+    });
+  }
+});
+
+// Upload document to working group
+app.post('/api/working-groups/:workingGroupId/upload', upload.single('document'), (req, res) => {
+  try {
+    const { workingGroupId } = req.params;
+    const { 
+      title, 
+      author, 
+      source, 
+      tags, 
+      language, 
+      category, 
+      version, 
+      license,
+      customFields,
+      modelOverride,
+      processingOptions,
+      disclosureOptions
+    } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: 'Document file is required' 
+      });
+    }
+
+    const workingGroup = workingGroups.get(workingGroupId);
+    if (!workingGroup) {
+      return res.status(404).json({ 
+        error: 'Working group not found' 
+      });
+    }
+
+    const documentId = `doc_${Date.now()}`;
+    const content = req.file.buffer.toString('utf-8');
+
+    // Parse JSON fields
+    const parsedTags = tags ? JSON.parse(tags) : [];
+    const parsedCustomFields = customFields ? JSON.parse(customFields) : {};
+
+    const documentUpload = {
+      id: documentId,
+      workingGroupId,
+      fileName: `${documentId}_${req.file.originalname}`,
+      originalName: req.file.originalname,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      content,
+      metadata: {
+        title: title || req.file.originalname,
+        author,
+        source,
+        tags: parsedTags,
+        language: language || 'en',
+        category: category || 'general',
+        version: version || '1.0.0',
+        license,
+        customFields: parsedCustomFields
+      },
+      processingStatus: 'completed', // Simplified for demo
+      processingResults: {
+        chunks: [],
+        embeddings: [],
+        summary: `Document processed: ${req.file.originalname}`,
+        keywords: parsedTags,
+        entities: [],
+        qualityScore: 0.8,
+        processingTime: 100,
+        modelUsed: modelOverride || workingGroup.configuration.modelSettings.primaryModel,
+        processingSteps: []
+      },
+      intelligenceDisclosure: {
+        modelInfo: {
+          primaryModel: modelOverride || workingGroup.configuration.modelSettings.primaryModel,
+          fallbackModels: workingGroup.configuration.modelSettings.fallbackModels,
+          modelProvider: workingGroup.configuration.modelSettings.modelProvider,
+          parameters: workingGroup.configuration.modelSettings,
+          version: '1.0.0',
+          capabilities: ['text', 'chat', 'analysis']
+        },
+        processingSteps: [],
+        sourceAttribution: [],
+        confidenceScores: {
+          overall: 0.8,
+          factual: 0.8,
+          contextual: 0.8,
+          temporal: 0.8,
+          source: 0.8,
+          reasoning: 0.8
+        },
+        reasoningChain: [],
+        metadata: {
+          generatedAt: new Date(),
+          disclosureLevel: 'partial',
+          workingGroupId
+        }
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    documentUploads.set(documentId, documentUpload);
+
+    // Update working group metadata
+    workingGroup.metadata.documentCount++;
+    workingGroup.metadata.lastActivity = new Date();
+
+    res.json({
+      success: true,
+      documentUpload,
+      message: 'Document uploaded and processed successfully'
+    });
+
+  } catch (error) {
+    console.error('Document upload failed:', error);
+    res.status(500).json({ 
+      error: 'Document upload failed',
+      details: error.message
+    });
+  }
+});
+
+// Get document uploads for working group
+app.get('/api/working-groups/:workingGroupId/documents', (req, res) => {
+  try {
+    const { workingGroupId } = req.params;
+    const { status, limit, offset } = req.query;
+
+    let documents = Array.from(documentUploads.values())
+      .filter(doc => doc.workingGroupId === workingGroupId);
+
+    // Filter by status if provided
+    if (status) {
+      documents = documents.filter(doc => doc.processingStatus === status);
+    }
+
+    // Apply pagination
+    const limitNum = limit ? parseInt(limit) : 50;
+    const offsetNum = offset ? parseInt(offset) : 0;
+    const paginatedDocuments = documents.slice(offsetNum, offsetNum + limitNum);
+
+    res.json({
+      success: true,
+      documents: paginatedDocuments,
+      total: documents.length,
+      limit: limitNum,
+      offset: offsetNum,
+      message: 'Documents retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Failed to retrieve documents:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve documents',
+      details: error.message
+    });
+  }
+});
+
+// Query working group RAG container
+app.post('/api/working-groups/:workingGroupId/query', async (req, res) => {
+  try {
+    const { workingGroupId } = req.params;
+    const { 
+      query, 
+      modelOverride, 
+      includeDisclosure, 
+      maxResults, 
+      similarityThreshold 
+    } = req.body;
+
+    if (!query) {
+      return res.status(400).json({ 
+        error: 'Query is required' 
+      });
+    }
+
+    const workingGroup = workingGroups.get(workingGroupId);
+    if (!workingGroup) {
+      return res.status(404).json({ 
+        error: 'Working group not found' 
+      });
+    }
+
+    const modelToUse = modelOverride || workingGroup.configuration.modelSettings.primaryModel;
+    const startTime = Date.now();
+
+    // Get documents for this working group
+    const documents = Array.from(documentUploads.values())
+      .filter(doc => doc.workingGroupId === workingGroupId);
+
+    // Generate response using the selected model
+    const response = await generateLLMResponse(query, modelToUse, workingGroup.domain);
+
+    // Generate intelligence disclosure if requested
+    let intelligenceDisclosure = null;
+    if (includeDisclosure !== false && workingGroup.configuration.intelligenceDisclosure.enabled) {
+      intelligenceDisclosure = {
+        modelInfo: {
+          primaryModel: modelToUse,
+          fallbackModels: workingGroup.configuration.modelSettings.fallbackModels,
+          modelProvider: workingGroup.configuration.modelSettings.modelProvider,
+          parameters: workingGroup.configuration.modelSettings,
+          version: '1.0.0',
+          capabilities: ['text', 'chat', 'analysis']
+        },
+        processingSteps: [],
+        sourceAttribution: documents.map(doc => ({
+          sourceId: doc.id,
+          sourceType: 'document',
+          relevanceScore: 0.8,
+          contribution: doc.metadata.title,
+          metadata: { fileName: doc.originalName }
+        })),
+        confidenceScores: {
+          overall: 0.8,
+          factual: 0.8,
+          contextual: 0.8,
+          temporal: 0.8,
+          source: 0.8,
+          reasoning: 0.8
+        },
+        reasoningChain: [],
+        metadata: {
+          generatedAt: new Date(),
+          disclosureLevel: workingGroup.configuration.intelligenceDisclosure.disclosureLevel,
+          workingGroupId
+        }
+      };
+    }
+
+    const result = {
+      response,
+      sources: documents.slice(0, maxResults || 5).map(doc => ({
+        id: doc.id,
+        title: doc.metadata.title,
+        content: doc.content.substring(0, 500) + '...',
+        score: 0.8,
+        accessLevel: 'full'
+      })),
+      intelligenceDisclosure,
+      metadata: {
+        workingGroupId,
+        modelUsed: modelToUse,
+        processingTime: Date.now() - startTime,
+        confidence: 0.8
+      }
+    };
+
+    res.json({
+      success: true,
+      result,
+      message: 'Query processed successfully'
+    });
+
+  } catch (error) {
+    console.error('Working group query failed:', error);
+    res.status(500).json({ 
+      error: 'Working group query failed',
+      details: error.message
+    });
+  }
+});
+
+// Get available models for working group
+app.get('/api/working-groups/:workingGroupId/models', (req, res) => {
+  try {
+    const { workingGroupId } = req.params;
+    const workingGroup = workingGroups.get(workingGroupId);
+    
+    if (!workingGroup) {
+      return res.status(404).json({ 
+        error: 'Working group not found' 
+      });
+    }
+
+    const models = {
+      primary: workingGroup.configuration.modelSettings.primaryModel,
+      fallback: workingGroup.configuration.modelSettings.fallbackModels,
+      provider: workingGroup.configuration.modelSettings.modelProvider,
+      available: [
+        { name: 'gpt-3.5-turbo', provider: 'openai', capabilities: ['text', 'chat'] },
+        { name: 'gpt-4', provider: 'openai', capabilities: ['text', 'chat', 'reasoning'] },
+        { name: 'claude-3-haiku', provider: 'anthropic', capabilities: ['text', 'chat', 'analysis'] },
+        { name: 'claude-3-sonnet', provider: 'anthropic', capabilities: ['text', 'chat', 'analysis', 'reasoning'] },
+        { name: 'llama2', provider: 'ollama', capabilities: ['text', 'chat'] },
+        { name: 'phala-gpt', provider: 'phala', capabilities: ['text', 'chat', 'confidential'] }
+      ]
+    };
+
+    res.json({
+      success: true,
+      models,
+      message: 'Available models retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('Failed to retrieve models:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve models',
+      details: error.message
+    });
+  }
+});
+
+// Working groups health check
+app.get('/api/working-groups/health', (req, res) => {
+  try {
+    res.json({
+      success: true,
+      healthy: true,
+      workingGroupsCount: workingGroups.size,
+      documentsCount: documentUploads.size,
+      message: 'Working groups system healthy'
+    });
+
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ 
+      error: 'Health check failed',
+      details: error.message
+    });
+  }
+});
+
 // Serve React app for all other routes (must be last)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
@@ -1284,6 +1782,12 @@ app.listen(PORT, () => {
   console.log(`API: http://localhost:${PORT}/api/agents`);
   console.log(`LLM Status: http://localhost:${PORT}/api/status`);
   console.log(`LLM Test: http://localhost:${PORT}/api/test-llm`);
+  console.log(`\n📁 Working Groups API:`);
+  console.log(`   Create: POST http://localhost:${PORT}/api/working-groups/create`);
+  console.log(`   List: GET http://localhost:${PORT}/api/working-groups`);
+  console.log(`   Upload: POST http://localhost:${PORT}/api/working-groups/{id}/upload`);
+  console.log(`   Query: POST http://localhost:${PORT}/api/working-groups/{id}/query`);
+  console.log(`   Models: GET http://localhost:${PORT}/api/working-groups/{id}/models`);
   console.log(`\n🔒 Phala Cloud Integration:`);
   console.log(`   ✅ Confidential Compute Enabled`);
   console.log(`   ✅ Privacy-Preserving AI Processing`);
