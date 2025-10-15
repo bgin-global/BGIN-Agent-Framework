@@ -4,10 +4,10 @@
 
 import { logger } from '../utils/logger';
 import { database } from '../utils/database';
+import { config } from '../utils/config';
 import { qdrantClient } from '../integrations/vector-db/qdrant-client';
 import { llmClient } from '../integrations/llm/llm-client';
 import { discourseClient } from '../integrations/discourse-api/discourse-client';
-import { kwaaiClient } from '../integrations/kwaai/kwaai-client';
 
 export interface SystemMetrics {
   timestamp: string;
@@ -40,7 +40,6 @@ export interface SystemMetrics {
   };
   integrations: {
     discourse: boolean;
-    kwaai: boolean;
     lastSync: string;
     syncErrors: number;
   };
@@ -391,38 +390,30 @@ export class DataMonitor {
 
   private async collectIntegrationsMetrics(): Promise<SystemMetrics['integrations']> {
     try {
+      // If Discourse agent is disabled, skip metrics collection
+      if (!config.discourseAgentEnabled) {
+        return {
+          discourse: false,
+          lastSync: 'Disabled',
+          syncErrors: 0
+        };
+      }
+
+      // Check Discourse health if enabled
       const discourseHealth = await discourseClient.healthCheck();
-      const kwaaiHealth = await kwaaiClient.healthCheck();
 
-      // Get last sync time
-      const lastSyncResult = await database.query(`
-        SELECT MAX(created_at) as last_sync 
-        FROM archive_documents 
-        WHERE source = 'discourse'
-      `);
-      const lastSync = lastSyncResult.rows[0].last_sync || 'Never';
-
-      // Get sync errors
-      const syncErrorsResult = await database.query(`
-        SELECT COUNT(*) as errors 
-        FROM archive_documents 
-        WHERE source = 'discourse' 
-        AND processing_status = 'failed'
-      `);
-      const syncErrors = parseInt(syncErrorsResult.rows[0].errors);
-
+      // Note: Future implementation would query archive_documents with 'source' column
+      // For now, return basic metrics since 'source' column doesn't exist yet
       return {
         discourse: discourseHealth,
-        kwaai: kwaaiHealth,
-        lastSync: lastSync.toString(),
-        syncErrors
+        lastSync: 'Not implemented',
+        syncErrors: 0
       };
 
     } catch (error) {
       logger.error('Failed to collect integrations metrics:', error);
       return {
         discourse: false,
-        kwaai: false,
         lastSync: 'Never',
         syncErrors: 0
       };

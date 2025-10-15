@@ -8,7 +8,6 @@ import { logger } from '../utils/logger';
 import { qdrantClient } from '../integrations/vector-db/qdrant-client';
 import { llmClient } from '../integrations/llm/llm-client';
 import { discourseClient } from '../integrations/discourse-api/discourse-client';
-import { kwaaiClient } from '../integrations/kwaai/kwaai-client';
 import { dataMonitor } from '../monitoring/data-monitor';
 
 const router = Router();
@@ -71,10 +70,8 @@ router.get('/', async (req, res) => {
     // Check Integrations
     try {
       const discourseHealth = await discourseClient.healthCheck();
-      const kwaaiHealth = await kwaaiClient.healthCheck();
-      const integrationsHealthy = discourseHealth || kwaaiHealth;
-      healthCheck.services.integrations = integrationsHealthy ? 'healthy' : 'unhealthy';
-      if (!integrationsHealthy) healthCheck.status = 'degraded';
+      healthCheck.services.integrations = discourseHealth ? 'healthy' : 'unhealthy';
+      if (!discourseHealth) healthCheck.status = 'degraded';
     } catch (error) {
       healthCheck.services.integrations = 'unhealthy';
       healthCheck.status = 'degraded';

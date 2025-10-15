@@ -4,7 +4,6 @@
 
 import { qdrantClient } from '../../integrations/vector-db/qdrant-client';
 import { llmClient } from '../../integrations/llm/llm-client';
-import { kwaaiClient } from '../../integrations/kwaai/kwaai-client';
 import { logger } from '../../utils/logger';
 import { database } from '../../utils/database';
 import { v4 as uuidv4 } from 'uuid';
@@ -106,19 +105,15 @@ export class DocumentProcessor {
 
       // Extract text content based on file type
       const content = await this.extractTextContent(file, metadata.mimeType);
-      
-      // Process with Kwaai for privacy-preserving analysis
-      const kwaaiResult = await kwaaiClient.processDocument(content, {
-        ...metadata,
-        documentId,
-        processingTimestamp: new Date().toISOString()
-      });
 
       // Generate summary using LLM
       const summary = await this.generateSummary(content, metadata);
 
       // Extract keywords
       const keywords = await this.extractKeywords(content, metadata);
+
+      // Extract entities using LLM
+      const entities = await this.extractEntities(content);
 
       // Chunk the document
       const chunks = await this.chunkDocument(content, documentId, metadata);
@@ -135,8 +130,8 @@ export class DocumentProcessor {
         chunks: chunksWithEmbeddings,
         summary,
         keywords,
-        entities: kwaaiResult.entities || [],
-        qualityScore: kwaaiResult.metadata.qualityScore,
+        entities: entities || [],
+        qualityScore: 0.8, // Default quality score
         processingStatus: 'completed'
       });
 
@@ -154,8 +149,8 @@ export class DocumentProcessor {
         chunks: chunksWithEmbeddings,
         summary,
         keywords,
-        entities: kwaaiResult.entities || [],
-        qualityScore: kwaaiResult.metadata.qualityScore,
+        entities: entities || [],
+        qualityScore: 0.8, // Default quality score
         processingStatus: 'completed'
       };
 
@@ -227,6 +222,16 @@ export class DocumentProcessor {
       return keywords;
     } catch (error) {
       logger.error('Failed to extract keywords:', error);
+      return [];
+    }
+  }
+
+  private async extractEntities(content: string): Promise<any[]> {
+    try {
+      const entities = await llmClient.extractEntities(content.substring(0, 3000));
+      return entities;
+    } catch (error) {
+      logger.error('Failed to extract entities:', error);
       return [];
     }
   }

@@ -38,7 +38,6 @@ import { SocketManager } from './services/socket-manager';
 import { qdrantClient } from './integrations/vector-db/qdrant-client';
 import { llmClient } from './integrations/llm/llm-client';
 import { discourseClient } from './integrations/discourse-api/discourse-client';
-import { kwaaiClient } from './integrations/kwaai/kwaai-client';
 
 // Monitoring imports
 import { dataMonitor } from './monitoring/data-monitor';
@@ -171,13 +170,17 @@ class BGINServer {
       const llmHealth = await llmClient.healthCheck();
       logger.info(`LLM services: ${Object.entries(llmHealth).map(([k, v]) => `${k}: ${v ? 'OK' : 'FAIL'}`).join(', ')}`);
 
-      // Initialize Discourse client
-      await discourseClient.initialize();
-      logger.info('Discourse API connected');
-
-      // Initialize Kwaai client
-      await kwaaiClient.initialize();
-      logger.info('Kwaai integration initialized');
+      // Initialize Discourse client (only if enabled)
+      if (config.discourseAgentEnabled) {
+        try {
+          await discourseClient.initialize();
+          logger.info('Discourse API connected');
+        } catch (error) {
+          logger.warn('Discourse API connection failed, continuing without Discourse integration');
+        }
+      } else {
+        logger.info('Discourse agent is disabled (DISCOURSE_AGENT_ENABLED=false)');
+      }
 
     } catch (error) {
       logger.error('Integration initialization failed:', error);

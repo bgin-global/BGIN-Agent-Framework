@@ -13,7 +13,6 @@ import { database } from './utils/database-simple';
 
 // Route imports
 import healthRoutes from './routes/health';
-import phalaRoutes from './routes/phala';
 
 class SimpleBGINServer {
   private app: express.Application;
@@ -45,9 +44,6 @@ class SimpleBGINServer {
   private setupRoutes() {
     // Health check
     this.app.use('/health', healthRoutes);
-    
-    // Phala Cloud integration
-    this.app.use('/api/phala', phalaRoutes);
 
     // LLM Chat endpoint
     this.app.post('/api/chat', async (req, res) => {

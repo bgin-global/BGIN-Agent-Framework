@@ -53,11 +53,9 @@ export interface DocumentationSubsection {
 
 export class DocumentationAdvisor {
   private documentProcessor: DocumentProcessor;
-  private useDistributedInference: boolean;
 
   constructor() {
     this.documentProcessor = new DocumentProcessor();
-    this.useDistributedInference = process.env.KWAAI_DISTRIBUTED_NODES ? true : false;
   }
 
   /**
@@ -103,9 +101,7 @@ export class DocumentationAdvisor {
 
       const response = await llmClient.generateResponse(analysisPrompt, {
         maxTokens: 500,
-        temperature: 0.2,
-        // Leverage Kwaai distributed inference for better analysis
-        model: this.useDistributedInference ? 'kwaainet/llama-3.2-70b-instruct' : 'kwaainet/llama-3.2-3b-instruct'
+        temperature: 0.2
       });
 
       const metrics = JSON.parse(response.content);
@@ -191,9 +187,7 @@ export class DocumentationAdvisor {
 
       const response = await llmClient.generateResponse(recommendationsPrompt, {
         maxTokens: 800,
-        temperature: 0.3,
-        // Use distributed inference for comprehensive recommendations
-        model: this.useDistributedInference ? 'kwaainet/llama-3.2-70b-instruct' : 'kwaainet/llama-3.2-3b-instruct'
+        temperature: 0.3
       });
 
       const result = JSON.parse(response.content);
@@ -276,9 +270,7 @@ export class DocumentationAdvisor {
 
       const response = await llmClient.generateResponse(planPrompt, {
         maxTokens: 1200,
-        temperature: 0.4,
-        // Leverage distributed inference for complex planning
-        model: this.useDistributedInference ? 'kwaainet/llama-3.2-70b-instruct' : 'kwaainet/llama-3.2-3b-instruct'
+        temperature: 0.4
       });
 
       const plan = JSON.parse(response.content);
@@ -343,9 +335,7 @@ export class DocumentationAdvisor {
 
       const response = await llmClient.generateResponse(contentPrompt, {
         maxTokens: Math.min(4000, section.estimatedLength * 2),
-        temperature: 0.3,
-        // Use distributed inference for high-quality content generation
-        model: this.useDistributedInference ? 'kwaainet/llama-3.2-70b-instruct' : 'kwaainet/llama-3.2-3b-instruct'
+        temperature: 0.3
       });
 
       return response.content;
@@ -390,9 +380,7 @@ export class DocumentationAdvisor {
 
       const response = await llmClient.generateResponse(validationPrompt, {
         maxTokens: 600,
-        temperature: 0.2,
-        // Use distributed inference for thorough validation
-        model: this.useDistributedInference ? 'kwaainet/llama-3.2-70b-instruct' : 'kwaainet/llama-3.2-3b-instruct'
+        temperature: 0.2
       });
 
       const validation = JSON.parse(response.content);
@@ -413,61 +401,23 @@ export class DocumentationAdvisor {
   }
 
   /**
-   * Leverage Kwaai distributed inference for parallel document analysis
+   * Analyze multiple documents in parallel
    */
   async analyzeDocumentsInParallel(
     documents: ProcessedDocument[],
     context?: { sessionId: string; domain: string }
   ): Promise<DocumentationQualityMetrics[]> {
-    if (!this.useDistributedInference) {
-      // Fallback to sequential processing
-      const results: DocumentationQualityMetrics[] = [];
-      for (const doc of documents) {
-        const metrics = await this.analyzeDocumentationQuality(doc, context);
-        results.push(metrics);
-      }
-      return results;
-    }
-
     try {
-      logger.info(`Analyzing ${documents.length} documents in parallel using Kwaai distributed inference`);
-      
+      logger.info(`Analyzing ${documents.length} documents in parallel`);
+
       // Create parallel analysis tasks
-      const analysisTasks = documents.map(async (doc, index) => {
-        const analysisPrompt = `
-          Analyze document ${index + 1} of ${documents.length} using Google OpenDocs methodology.
-          
-          Document Title: ${doc.title}
-          Content: ${doc.content.substring(0, 2000)}...
-          Summary: ${doc.summary}
-          Keywords: ${doc.keywords.join(', ')}
-          
-          Context: ${context ? `Session: ${context.sessionId}, Domain: ${context.domain}` : 'General'}
-          
-          Provide scores (0-1) for completeness, clarity, accuracy, structure, and accessibility.
-          Respond in JSON format with reasoning.
-        `;
-
-        const response = await llmClient.generateResponse(analysisPrompt, {
-          maxTokens: 300,
-          temperature: 0.2,
-          model: 'kwaainet/llama-3.2-70b-instruct'
-        });
-
-        const metrics = JSON.parse(response.content);
-        return {
-          completeness: Math.max(0, Math.min(1, metrics.completeness || 0)),
-          clarity: Math.max(0, Math.min(1, metrics.clarity || 0)),
-          accuracy: Math.max(0, Math.min(1, metrics.accuracy || 0)),
-          structure: Math.max(0, Math.min(1, metrics.structure || 0)),
-          accessibility: Math.max(0, Math.min(1, metrics.accessibility || 0)),
-          overallScore: Math.max(0, Math.min(1, metrics.overallScore || 0))
-        };
+      const analysisTasks = documents.map(async (doc) => {
+        return await this.analyzeDocumentationQuality(doc, context);
       });
 
       // Execute all analyses in parallel
       const results = await Promise.all(analysisTasks);
-      
+
       logger.info(`Completed parallel analysis of ${documents.length} documents`);
       return results;
 

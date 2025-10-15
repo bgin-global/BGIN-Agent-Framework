@@ -17,23 +17,17 @@ const DISCOURSE_URL = process.env.DISCOURSE_URL || 'https://forum.bgin.org';
 const DISCOURSE_API_KEY = process.env.DISCOURSE_API_KEY || '';
 const DISCOURSE_USERNAME = process.env.DISCOURSE_USERNAME || 'bgin-ai-bot';
 
-// Phala Cloud configuration
-const PHALA_ENDPOINT = process.env.PHALA_ENDPOINT || 'https://890e30429c7029b543e69653fb1ca507293797ad-3000.dstack-prod5.phala.network';
-const PHALA_PUBLIC_KEY = process.env.PHALA_PUBLIC_KEY || '';
-const PHALA_SALT = process.env.PHALA_SALT || 'ee17e2170d7d40dcaf3015d610837cf5';
-const PHALA_API_KEY = process.env.PHALA_API_KEY || '';
-const PHALA_MODEL = process.env.PHALA_MODEL || 'openai/gpt-oss-120b';
-
-// RedPill AI integration removed - using Phala Cloud as primary LLM
-
-// OpenAI API configuration (fallback)
+// OpenAI API configuration (primary)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
-// KwaaiNet configuration
-const KWAAI_ENDPOINT = process.env.KWAAI_ENDPOINT || 'https://api.kwaai.ai/v1';
-const KWAAI_API_KEY = process.env.KWAAI_API_KEY || '';
-const KWAAI_MODEL = process.env.KWAAI_MODEL || 'kwaainet/llama-3.2-3b-instruct';
+// Anthropic API configuration (alternative primary)
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+
+// Ollama configuration (fallback - local LLM)
+const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://localhost:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'gemma3:4b';
 
 // Agent system prompts
 const getAgentSystemPrompt = (agentType, sessionType) => {
@@ -98,47 +92,48 @@ Provide comprehensive multi-agent analysis.`;
   }
 };
 
-// Phala Cloud Integration Functions
-const callPhalaCloud = async (message, agentType, sessionType, isMultiAgent = false) => {
-  const systemPrompt = isMultiAgent 
+// Anthropic API Integration
+const callAnthropic = async (message, agentType, sessionType, isMultiAgent = false) => {
+  if (!ANTHROPIC_API_KEY) {
+    throw new Error('Anthropic API key not configured');
+  }
+
+  const systemPrompt = isMultiAgent
     ? getAgentSystemPrompt('multi', sessionType)
     : getAgentSystemPrompt(agentType, sessionType);
 
   try {
-    console.log(`🔒 Sending ${agentType} message to Phala Cloud for ${sessionType} session`);
-    
-    const response = await axios.post(`${PHALA_ENDPOINT}/v1/chat/completions`, {
-      model: process.env.PHALA_MODEL || 'openai/gpt-oss-120b',
+    console.log(`🤖 Sending ${agentType} message to Anthropic Claude for ${sessionType} session`);
+
+    const response = await axios.post(ANTHROPIC_API_URL, {
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1000,
       messages: [
-        { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      temperature: 0.7,
-      max_tokens: 1000
+      system: systemPrompt,
+      temperature: 0.7
     }, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${PHALA_API_KEY}`
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json'
       }
     });
 
     return {
-      content: response.data.choices[0].message.content,
-      confidence: 0.95, // High confidence due to TEE verification
+      content: response.data.content[0].text,
+      confidence: 0.95,
       sources: Math.floor(Math.random() * 5) + 2,
-      processingTime: response.data.usage?.total_tokens || 0,
+      processingTime: response.data.usage?.input_tokens + response.data.usage?.output_tokens || 0,
       llmUsed: true,
-      model: process.env.PHALA_MODEL || 'openai/gpt-oss-120b',
-      confidentialCompute: true,
-      phalaCloudUsed: true
+      model: 'claude-3-haiku-20240307'
     };
   } catch (error) {
-    console.error('Phala Cloud API error:', error.response?.data || error.message);
+    console.error('Anthropic API error:', error.response?.data || error.message);
     throw error;
   }
 };
-
-// RedPill AI integration removed - using Phala Cloud as primary LLM
 
 // LLM Integration Functions
 const callOpenAI = async (message, agentType, sessionType, isMultiAgent = false) => {
@@ -180,40 +175,39 @@ const callOpenAI = async (message, agentType, sessionType, isMultiAgent = false)
   }
 };
 
-// KwaaiNet API request function
-const generateKwaaiNetResponse = async (message, agentType, sessionType, isMultiAgent = false) => {
-  const systemPrompt = getAgentSystemPrompt(agentType, sessionType);
-  
+// Ollama API Integration (Local LLM Fallback)
+const callOllama = async (message, agentType, sessionType, isMultiAgent = false) => {
+  const systemPrompt = isMultiAgent
+    ? getAgentSystemPrompt('multi', sessionType)
+    : getAgentSystemPrompt(agentType, sessionType);
+
   try {
-    const response = await axios.post(`${KWAAI_ENDPOINT}/chat/completions`, {
-      model: KWAAI_MODEL,
+    console.log(`🏠 Sending ${agentType} message to Ollama (${OLLAMA_MODEL}) for ${sessionType} session`);
+
+    const response = await axios.post(`${OLLAMA_API_URL}/api/chat`, {
+      model: OLLAMA_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
       ],
-      max_tokens: 1000,
-      temperature: 0.7,
-      top_p: 0.9,
-      stream: false
-    }, {
-      headers: {
-        'Authorization': `Bearer ${KWAAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'X-Kwaai-Version': '1.0'
+      stream: false,
+      options: {
+        temperature: 0.7,
+        num_predict: 1000
       }
     });
 
     return {
-      content: response.data.choices[0].message.content,
+      content: response.data.message.content,
       confidence: 0.85,
       sources: Math.floor(Math.random() * 5) + 2,
-      processingTime: response.data.usage ? Math.round(response.data.usage.total_tokens / 100) : 0,
+      processingTime: response.data.eval_count || 0,
       llmUsed: true,
-      model: KWAAI_MODEL,
-      kwaaiNet: true
+      model: OLLAMA_MODEL,
+      localLLM: true
     };
   } catch (error) {
-    console.error('KwaaiNet API error:', error.response?.data || error.message);
+    console.error('Ollama API error:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -348,30 +342,30 @@ app.post('/api/chat', async (req, res) => {
     }
 
     console.log(`🤖 Processing ${multiAgent ? 'multi-agent' : agent} request for ${session} session`);
-    
+
     let response;
-    
+
     try {
-      // Try KwaaiNet first (primary LLM provider)
-      response = await generateKwaaiNetResponse(message, agent, session, multiAgent);
-      console.log(`✅ KwaaiNet response generated using ${response.model}`);
-    } catch (kwaaiError) {
-      console.log(`⚠️ KwaaiNet failed, trying OpenAI: ${kwaaiError.message}`);
-      try {
-        // Fall back to OpenAI if KwaaiNet fails
+      // Try primary LLM providers first (OpenAI or Anthropic)
+      if (OPENAI_API_KEY) {
         response = await callOpenAI(message, agent, session, multiAgent);
         console.log(`✅ OpenAI response generated using ${response.model}`);
-      } catch (openaiError) {
-        console.log(`⚠️ OpenAI failed, trying Phala Cloud: ${openaiError.message}`);
-        try {
-          // Fall back to Phala Cloud if OpenAI fails
-          response = await callPhalaCloud(message, agent, session, multiAgent);
-          console.log(`✅ Phala Cloud response generated using ${response.model}`);
-        } catch (phalaError) {
-          console.log(`⚠️ All LLM services failed, using fallback: ${phalaError.message}`);
-          // Fall back to static responses if all LLM services fail
-          response = generateFallbackResponse(message, agent, session, multiAgent);
-        }
+      } else if (ANTHROPIC_API_KEY) {
+        response = await callAnthropic(message, agent, session, multiAgent);
+        console.log(`✅ Anthropic response generated using ${response.model}`);
+      } else {
+        throw new Error('No external LLM API keys configured');
+      }
+    } catch (primaryError) {
+      console.log(`⚠️ Primary LLM failed: ${primaryError.message}, trying Ollama`);
+      try {
+        // Fall back to Ollama (local LLM)
+        response = await callOllama(message, agent, session, multiAgent);
+        console.log(`✅ Ollama response generated using ${response.model}`);
+      } catch (ollamaError) {
+        console.log(`⚠️ Ollama failed: ${ollamaError.message}, using static fallback`);
+        // Fall back to static responses if all LLM services fail
+        response = generateFallbackResponse(message, agent, session, multiAgent);
       }
     }
     
@@ -399,17 +393,21 @@ app.post('/api/chat', async (req, res) => {
 
 // Additional API endpoints
 app.get('/api/status', (req, res) => {
+  const primaryProvider = OPENAI_API_KEY
+    ? 'OpenAI GPT-3.5-turbo'
+    : ANTHROPIC_API_KEY
+    ? 'Anthropic Claude-3-Haiku'
+    : 'None (Ollama fallback only)';
+
   res.json({
     status: 'running',
-    phalaCloudConfigured: true,
-    phalaEndpoint: PHALA_ENDPOINT,
-    redpillConfigured: false,
     openaiConfigured: !!OPENAI_API_KEY,
-    kwaaiNetConfigured: !!KWAAI_API_KEY,
-    kwaaiEndpoint: KWAAI_ENDPOINT,
-    kwaaiModel: KWAAI_MODEL,
-    llmProvider: 'KwaaiNet (Primary)',
-    fallbackProvider: OPENAI_API_KEY ? 'OpenAI GPT-3.5-turbo' : 'Phala Cloud',
+    anthropicConfigured: !!ANTHROPIC_API_KEY,
+    ollamaConfigured: true,
+    ollamaEndpoint: OLLAMA_API_URL,
+    ollamaModel: OLLAMA_MODEL,
+    llmProvider: primaryProvider,
+    fallbackProvider: `Ollama (${OLLAMA_MODEL})`,
     finalFallback: 'Static Responses',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
@@ -418,73 +416,76 @@ app.get('/api/status', (req, res) => {
 
 app.get('/api/test-llm', async (req, res) => {
   try {
-    // Test KwaaiNet first
-    const testResponse = await generateKwaaiNetResponse('Hello, this is a test message', 'archive', 'test', false);
+    // Test primary LLM (OpenAI or Anthropic)
+    let testResponse;
+    let provider;
+
+    if (OPENAI_API_KEY) {
+      testResponse = await callOpenAI('Hello, this is a test message', 'archive', 'test', false);
+      provider = 'OpenAI';
+    } else if (ANTHROPIC_API_KEY) {
+      testResponse = await callAnthropic('Hello, this is a test message', 'archive', 'test', false);
+      provider = 'Anthropic';
+    } else {
+      throw new Error('No external LLM API keys configured');
+    }
+
     res.json({
       status: 'working',
-      message: 'KwaaiNet integration is working correctly',
+      message: `${provider} integration is working correctly`,
       llmAvailable: true,
-      provider: 'KwaaiNet',
+      provider: provider,
       model: testResponse.model,
-      kwaaiNet: testResponse.kwaaiNet,
       response: testResponse.content.substring(0, 100) + '...',
       processingTime: testResponse.processingTime
     });
-  } catch (kwaaiError) {
-    // Fall back to OpenAI test
+  } catch (primaryError) {
+    // Fall back to Ollama test
     try {
-      if (!OPENAI_API_KEY) {
-        return res.json({
-          status: 'kwaai_failed_no_fallback',
-          message: 'KwaaiNet failed, OpenAI not configured. Using fallback mode.',
-          llmAvailable: false,
-          kwaaiError: kwaaiError.message
-        });
-      }
-      
-      const testResponse = await callOpenAI('Hello, this is a test message', 'archive', 'test', false);
+      const testResponse = await callOllama('Hello, this is a test message', 'archive', 'test', false);
       return res.json({
-        status: 'kwaai_failed_openai_working',
-        message: 'KwaaiNet failed, but OpenAI is working',
+        status: 'primary_failed_ollama_working',
+        message: 'External LLM failed, but Ollama (local) is working',
         llmAvailable: true,
-        provider: 'OpenAI (Fallback)',
+        provider: 'Ollama (Fallback)',
         model: testResponse.model,
+        localLLM: testResponse.localLLM,
         response: testResponse.content.substring(0, 100) + '...',
-        kwaaiError: kwaaiError.message
+        primaryError: primaryError.message
       });
-    } catch (openaiError) {
+    } catch (ollamaError) {
       return res.json({
         status: 'all_llm_failed',
         message: 'All LLM services failed. Using static responses.',
         llmAvailable: false,
-        kwaaiError: kwaaiError.message,
-        openaiError: openaiError.message
+        primaryError: primaryError.message,
+        ollamaError: ollamaError.message
       });
     }
   }
 });
 
-// Test KwaaiNet endpoint
-app.get('/api/test-kwaainet', async (req, res) => {
+// Test Ollama endpoint
+app.get('/api/test-ollama', async (req, res) => {
   try {
-    const testResponse = await generateKwaaiNetResponse('Hello, this is a test message', 'archive', 'test', false);
+    const testResponse = await callOllama('Hello, this is a test message', 'archive', 'test', false);
     res.json({
       status: 'working',
-      message: 'KwaaiNet integration is working correctly',
+      message: 'Ollama integration is working correctly',
       llmAvailable: true,
-      provider: 'KwaaiNet',
+      provider: 'Ollama',
       model: testResponse.model,
-      kwaaiNet: testResponse.kwaaiNet,
+      localLLM: testResponse.localLLM,
       response: testResponse.content.substring(0, 100) + '...',
       processingTime: testResponse.processingTime
     });
   } catch (error) {
     res.json({
       status: 'failed',
-      message: 'KwaaiNet integration failed',
+      message: 'Ollama integration failed',
       llmAvailable: false,
       error: error.message,
-      suggestion: 'Make sure KwaaiNet API key is configured and endpoint is accessible: ' + KWAAI_ENDPOINT
+      suggestion: 'Make sure Ollama is running locally at: ' + OLLAMA_API_URL
     });
   }
 });
@@ -2979,9 +2980,10 @@ app.get('/api/working-groups/health', (req, res) => {
 });
 
 // Serve React app for all other routes (must be last)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
-});
+// Note: This is disabled for development. Use separate frontend dev server.
+// app.get('/*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
+// });
 
 app.listen(PORT, () => {
   console.log(`🚀 BGIN AI MVP Server running on port ${PORT}`);
@@ -2996,16 +2998,28 @@ app.listen(PORT, () => {
   console.log(`   Upload: POST http://localhost:${PORT}/api/working-groups/{id}/upload`);
   console.log(`   Query: POST http://localhost:${PORT}/api/working-groups/{id}/query`);
   console.log(`   Models: GET http://localhost:${PORT}/api/working-groups/{id}/models`);
-  console.log(`\n🔒 Phala Cloud Integration:`);
-  console.log(`   ✅ Confidential Compute Enabled`);
-  console.log(`   ✅ Privacy-Preserving AI Processing`);
-  console.log(`   ✅ TEE-Verified Responses`);
-  console.log(`\n🔴 RedPill AI Integration: Removed`);
-  console.log(`\n📝 Optional OpenAI Fallback:`);
-  console.log(`   1. Get an OpenAI API key from https://platform.openai.com/api-keys`);
-  console.log(`   2. Add OPENAI_API_KEY=your_key_here to your .env file`);
-  console.log(`   3. Restart the server`);
-  
-  const fallbackStatus = OPENAI_API_KEY ? 'OpenAI' : 'Phala Cloud';
-  console.log(`\n🔧 Current LLM Status: 🌐 KwaaiNet (Primary) + ${fallbackStatus} (Fallback)`);
+
+  console.log(`\n🤖 LLM Configuration:`);
+  if (OPENAI_API_KEY) {
+    console.log(`   ✅ Primary: OpenAI GPT-3.5-turbo`);
+  } else if (ANTHROPIC_API_KEY) {
+    console.log(`   ✅ Primary: Anthropic Claude-3-Haiku`);
+  } else {
+    console.log(`   ⚠️  No external LLM configured - using Ollama only`);
+  }
+  console.log(`   ✅ Fallback: Ollama (${OLLAMA_MODEL}) - Local LLM`);
+  console.log(`   ✅ Final Fallback: Static Responses`);
+
+  console.log(`\n📝 Setup Instructions:`);
+  if (!OPENAI_API_KEY && !ANTHROPIC_API_KEY) {
+    console.log(`   To enable external LLM (recommended):`);
+    console.log(`   1. Get an API key:`);
+    console.log(`      - OpenAI: https://platform.openai.com/api-keys`);
+    console.log(`      - Anthropic: https://console.anthropic.com/`);
+    console.log(`   2. Add to .env file: OPENAI_API_KEY=your_key or ANTHROPIC_API_KEY=your_key`);
+    console.log(`   3. Restart the server`);
+  }
+
+  const primaryProvider = OPENAI_API_KEY ? 'OpenAI' : ANTHROPIC_API_KEY ? 'Anthropic' : 'Ollama only';
+  console.log(`\n🔧 Current Status: ${primaryProvider} → Ollama (${OLLAMA_MODEL}) → Static`);
 });

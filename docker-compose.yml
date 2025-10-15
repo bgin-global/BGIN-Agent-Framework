@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Core Database Services
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: bgin-postgres
     environment:
       POSTGRES_DB: bgin_mvp
@@ -64,8 +64,8 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-dev-encryption-key-32-characters}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      KWAAI_API_KEY: ${KWAAI_API_KEY}
       DISCOURSE_API_KEY: ${DISCOURSE_API_KEY}
+      ANONYMIZATION_SALT: ${ANONYMIZATION_SALT:-dev-anonymization-salt}
       LOG_LEVEL: debug
     ports:
       - "4000:4000"
@@ -92,7 +92,6 @@ services:
     environment:
       VITE_API_URL: http://localhost:4000
       VITE_WS_URL: ws://localhost:4000
-      VITE_KWAAI_ENDPOINT: ${KWAAI_ENDPOINT:-http://localhost:8080}
       VITE_DISCOURSE_URL: ${DISCOURSE_URL:-https://discourse.bgin.org}
     ports:
       - "3000:3000"
@@ -105,24 +104,6 @@ services:
       - bgin-network
     restart: unless-stopped
     command: npm run dev
-
-  # Phala Cloud Next.js Starter
-  phala-cloud:
-    image: leechael/phala-cloud-nextjs-starter:latest
-    container_name: bgin-phala-cloud
-    ports:
-      - "3002:3000"
-    volumes:
-      - /var/run/tappd.sock:/var/run/tappd.sock
-    environment:
-      PHALA_PUBLIC_KEY: 1c95e9d4ee9c368502581e86af0b16ab99cadca5b174134eb8ebdb639b150550
-      PHALA_SALT: ee17e2170d7d40dcaf3015d610837cf5
-      NODE_ENV: development
-    networks:
-      - bgin-network
-    restart: unless-stopped
-    profiles:
-      - phala
 
   # Monitoring Services (Optional for Development)
   prometheus:
@@ -160,22 +141,6 @@ services:
     profiles:
       - monitoring
 
-  # Kwaai Mock Service (for development)
-  kwaai-mock:
-    build:
-      context: ./infrastructure/kwaai-mock
-      dockerfile: Dockerfile
-    container_name: bgin-kwaai-mock
-    ports:
-      - "8080:8080"
-    environment:
-      MOCK_MODE: true
-      PRIVACY_SIMULATION: enabled
-    networks:
-      - bgin-network
-    profiles:
-      - mock-services
-
 volumes:
   postgres_data:
     name: bgin_postgres_data
@@ -198,6 +163,5 @@ networks:
 # Development Quick Commands:
 # docker-compose up -d                    # Start all core services
 # docker-compose --profile monitoring up  # Start with monitoring
-# docker-compose --profile mock-services up # Start with mock services
 # docker-compose logs -f backend          # Follow backend logs
 # docker-compose exec postgres psql -U postgres -d bgin_mvp # Connect to DB

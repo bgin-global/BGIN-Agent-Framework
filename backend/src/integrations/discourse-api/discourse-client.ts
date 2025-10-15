@@ -227,7 +227,7 @@ export class DiscourseClient {
         return response;
       },
       (error) => {
-        logger.error('Discourse API response error:', error);
+        logger.warn('Discourse API response error:', error);
         return Promise.reject(error);
       }
     );
@@ -240,8 +240,9 @@ export class DiscourseClient {
       this.isConnected = true;
       logger.info('Discourse API connected successfully');
     } catch (error) {
-      logger.error('Failed to connect to Discourse API:', error);
-      throw new Error('Discourse connection failed');
+      logger.warn('Failed to connect to Discourse API:', error);
+      this.isConnected = false;
+      // Don't throw error - allow server to start without Discourse
     }
   }
 
@@ -437,7 +438,8 @@ export class DiscourseClient {
       await this.client.get('/site.json');
       return true;
     } catch (error) {
-      logger.error('Discourse health check failed:', error);
+      // Only log as warning - Discourse might be intentionally disabled
+      logger.warn('Discourse health check failed:', error);
       return false;
     }
   }

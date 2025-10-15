@@ -378,8 +378,7 @@ router.get('/:workingGroupId/models', asyncHandler(async (req, res) => {
         { name: 'gpt-4', provider: 'openai', capabilities: ['text', 'chat', 'reasoning'] },
         { name: 'claude-3-haiku', provider: 'anthropic', capabilities: ['text', 'chat', 'analysis'] },
         { name: 'claude-3-sonnet', provider: 'anthropic', capabilities: ['text', 'chat', 'analysis', 'reasoning'] },
-        { name: 'llama2', provider: 'ollama', capabilities: ['text', 'chat'] },
-        { name: 'phala-gpt', provider: 'phala', capabilities: ['text', 'chat', 'confidential'] }
+        { name: 'llama2', provider: 'ollama', capabilities: ['text', 'chat'] }
       ]
     };
 
