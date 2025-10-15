@@ -173,3 +173,6 @@ Thumbs.db
 # Test files
 test-*.js
 test-*.ts
+
+#Agent
+CLAUDE.md
