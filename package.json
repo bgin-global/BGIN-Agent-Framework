@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "dev:simple": "concurrently \"npm run dev:simple --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev:simple": "concurrently \"node simple-server.js\" \"npm run dev --workspace=frontend\"",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "start": "npm run start --workspace=backend",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
