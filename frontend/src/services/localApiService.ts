@@ -1,5 +1,5 @@
 // Local API Service for BGIN Frontend
-const API_BASE_URL = 'http://18.225.149.40:4000/api';
+const API_BASE_URL = 'https://688a0511a538.ngrok-free.app/api';
 
 export interface LocalMessage {
   role: 'system' | 'user' | 'assistant';
