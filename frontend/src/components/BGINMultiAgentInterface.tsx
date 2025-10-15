@@ -1461,26 +1461,15 @@ const BGINMultiAgentInterface = () => {
         )}
         </div>
         
-        {/* TEE Status Footer */}
+        {/* System Status - Consolidated */}
         <div className="p-4 border-t border-blue-400/20 flex-shrink-0">
-          <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 rounded-lg p-3">
+          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-400/30 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
-              <Cpu className="w-4 h-4 text-cyan-400" />
-              <span className="text-sm font-semibold text-white">Shared TEE Active</span>
+              <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
+              <span className="text-sm font-semibold text-white">System Active</span>
             </div>
             <div className="text-xs text-slate-300">
-              All agents collaborate securely through Phala Cloud's trusted execution environment
-            </div>
-          </div>
-          
-          {/* BlueNexus LLM Status */}
-          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-400/30 rounded-lg p-3 mt-2">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-4 h-4 rounded-full bg-blue-400 animate-pulse"></div>
-              <span className="text-sm font-semibold text-white">BlueNexus AI Active</span>
-            </div>
-            <div className="text-xs text-slate-300">
-              Primary LLM provider with GPT-4o and Claude Sonnet 4.5 models
+              BlueNexus AI • Phala TEE • Multi-Agent Ready
             </div>
           </div>
         </div>
@@ -1554,7 +1543,7 @@ const BGINMultiAgentInterface = () => {
                         </p>
                         <div className="flex items-center gap-1 text-xs text-cyan-300">
                           <Cpu className="w-3 h-3" />
-                          <span>Shared TEE Active</span>
+                          <span>Multi-Agent Mode</span>
                     </div>
                       </>
                     ) : (
@@ -1564,7 +1553,7 @@ const BGINMultiAgentInterface = () => {
                         </p>
                         <div className="flex items-center gap-1 text-xs text-purple-300">
                           <Lock className="w-3 h-3" />
-                          <span>Private TEE</span>
+                          <span>Direct Mode</span>
                     </div>
                       </>
                   )}
