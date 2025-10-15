@@ -91,7 +91,8 @@ const BGINMultiAgentInterface = () => {
     fpp: { connected: false, status: 'disconnected', features: ['Data Sovereignty', 'Dignity-Based Economics', 'Privacy by Design'] },
     toip: { connected: false, status: 'disconnected', features: ['DID Management', 'Verifiable Credentials', 'Trust Networks'] },
     privacyPools: { connected: false, status: 'disconnected', features: ['ASP Eligibility', 'Research Rewards', 'Privacy Transactions'] },
-    phalaCloud: { connected: false, status: 'disconnected', features: ['Trusted Execution Environment', 'Confidential Computing', 'Secure AI Processing'] }
+    phalaCloud: { connected: false, status: 'disconnected', features: ['Trusted Execution Environment', 'Confidential Computing', 'Secure AI Processing'] },
+    bluenexus: { connected: true, status: 'connected', features: ['GPT-4o', 'Claude Sonnet 4.5', 'High-Quality AI', 'Multi-Model Support'] }
   });
   
   // Conference Sessions State
@@ -940,6 +941,33 @@ const BGINMultiAgentInterface = () => {
               • Trust score calculation
             </div>
           </div>
+
+          {/* BlueNexus AI Integration */}
+          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-400/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
+              <h4 className="text-sm font-semibold text-white">BlueNexus AI Integration</h4>
+            </div>
+            <p className="text-xs text-slate-300 mb-2">Primary LLM provider with high-quality AI models</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">GPT-4o Model</span>
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Claude Sonnet 4.5</span>
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">Multi-Model Support</span>
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-300">High-Quality Responses</span>
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
           
           {/* Credential Composition Flow */}
           <div className="bg-slate-700/30 rounded-lg p-3">
@@ -1251,21 +1279,29 @@ const BGINMultiAgentInterface = () => {
               {/* Integration Status Indicators */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.bluenexus.connected ? 'bg-blue-400 animate-pulse' : 'bg-red-400'}`} />
+                  <span className="text-xs text-slate-300">BlueNexus</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
                   <div className={`w-2 h-2 rounded-full ${integrationStatus.kwaai.connected ? 'bg-green-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">Kwaai</span>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
                   <div className={`w-2 h-2 rounded-full ${integrationStatus.fpp.connected ? 'bg-green-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">FPP</span>
-            </div>
+                </div>
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
                   <div className={`w-2 h-2 rounded-full ${integrationStatus.toip.connected ? 'bg-green-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">ToIP</span>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
-                  <div className={`w-2 h-2 rounded-full ${integrationStatus.phalaCloud.connected ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.phalaCloud.connected ? 'bg-cyan-400' : 'bg-red-400'}`} />
                   <span className="text-xs text-slate-300">Phala</span>
-              </div>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-slate-700/30 rounded-lg">
+                  <div className={`w-2 h-2 rounded-full ${integrationStatus.privacyPools.connected ? 'bg-purple-400' : 'bg-red-400'}`} />
+                  <span className="text-xs text-slate-300">Privacy Pools</span>
+                </div>
               </div>
           </div>
         )}
@@ -1280,6 +1316,17 @@ const BGINMultiAgentInterface = () => {
             </div>
             <div className="text-xs text-slate-300">
               All agents collaborate securely through Phala Cloud's trusted execution environment
+            </div>
+          </div>
+          
+          {/* BlueNexus LLM Status */}
+          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-400/30 rounded-lg p-3 mt-2">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-4 h-4 rounded-full bg-blue-400 animate-pulse"></div>
+              <span className="text-sm font-semibold text-white">BlueNexus AI Active</span>
+            </div>
+            <div className="text-xs text-slate-300">
+              Primary LLM provider with GPT-4o and Claude Sonnet 4.5 models
             </div>
           </div>
         </div>
