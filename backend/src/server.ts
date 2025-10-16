@@ -142,9 +142,9 @@ class BGINServer {
       await this.agentCoordinator.initialize();
       logger.info('Agent coordinator initialized');
 
-      // Start monitoring
-      await dataMonitor.startMonitoring(30000); // 30 second intervals
-      logger.info('Data monitoring started');
+      // Start monitoring (disabled for development)
+      // await dataMonitor.startMonitoring(30000); // 30 second intervals
+      // logger.info('Data monitoring started');
 
       // Start server
       const port = config.port || 4000;
@@ -171,13 +171,29 @@ class BGINServer {
       const llmHealth = await llmClient.healthCheck();
       logger.info(`LLM services: ${Object.entries(llmHealth).map(([k, v]) => `${k}: ${v ? 'OK' : 'FAIL'}`).join(', ')}`);
 
-      // Initialize Discourse client
-      await discourseClient.initialize();
-      logger.info('Discourse API connected');
+      // Initialize Discourse client (only if enabled)
+      if (config.integrations.discourse) {
+        await discourseClient.initialize();
+        logger.info('Discourse API connected');
+      } else {
+        logger.info('Discourse integration disabled (DISCOURSE_INTEGRATION_ENABLED=false)');
+      }
 
-      // Initialize Kwaai client
-      await kwaaiClient.initialize();
-      logger.info('Kwaai integration initialized');
+      // Initialize Kwaai client (only if enabled)
+      if (config.integrations.kwaai) {
+        await kwaaiClient.initialize();
+        logger.info('Kwaai integration initialized');
+      } else {
+        logger.info('Kwaai integration disabled (KWAAI_INTEGRATION_ENABLED=false)');
+      }
+
+      // Phala integration (only if enabled)
+      if (config.integrations.phala) {
+        // await phalaClient.initialize();
+        logger.info('Phala integration initialized');
+      } else {
+        logger.info('Phala integration disabled (PHALA_INTEGRATION_ENABLED=false)');
+      }
 
     } catch (error) {
       logger.error('Integration initialization failed:', error);

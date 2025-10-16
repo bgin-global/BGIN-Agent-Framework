@@ -411,7 +411,7 @@ class KwaaiNetProvider implements LLMProvider {
       max_tokens: options.maxTokens || 4000,
       temperature: options.temperature || 0.3,
       top_p: options.topP || 1,
-      stop: options.stopSequences?.length > 0 ? options.stopSequences : undefined,
+      stop: (options.stopSequences && options.stopSequences.length > 0) ? options.stopSequences : undefined,
       stream: false
     });
 
@@ -499,11 +499,16 @@ class KwaaiNetProvider implements LLMProvider {
   }
 
   async isAvailable(): Promise<boolean> {
+    // Skip health check if Kwaai integration is disabled
+    if (process.env.KWAAI_INTEGRATION_ENABLED === 'false') {
+      return false;
+    }
+
     try {
       await this.client.get('/models');
       return true;
     } catch (error) {
-      logger.error('KwaaiNet availability check failed:', error);
+      logger.warn('KwaaiNet availability check failed:', error);
       return false;
     }
   }
@@ -655,16 +660,25 @@ class KwaaiDistributedProvider implements LLMProvider {
     // Initialize distributed nodes from environment
     const nodesEnv = process.env.KWAAI_DISTRIBUTED_NODES;
     this.nodes = nodesEnv ? nodesEnv.split(',').map(node => node.trim()) : [];
-    
+
     if (this.nodes.length === 0) {
       logger.warn('No Kwaai distributed nodes configured');
     } else {
       logger.info(`Initialized Kwaai distributed provider with ${this.nodes.length} nodes`);
-      this.performHealthChecks();
+
+      // Only perform health checks if Kwaai integration is enabled
+      if (process.env.KWAAI_INTEGRATION_ENABLED !== 'false' && process.env.KWAAI_DISTRIBUTED_ENABLED === 'true') {
+        this.performHealthChecks();
+      }
     }
   }
 
   private async performHealthChecks(): Promise<void> {
+    // Skip if integration is disabled
+    if (process.env.KWAAI_INTEGRATION_ENABLED === 'false') {
+      return;
+    }
+
     for (const node of this.nodes) {
       try {
         const response = await axios.get(`${node}/health`, { timeout: 5000 });

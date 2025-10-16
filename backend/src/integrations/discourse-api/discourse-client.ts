@@ -433,11 +433,16 @@ export class DiscourseClient {
   }
 
   async healthCheck(): Promise<boolean> {
+    // Skip health check if Discourse integration is disabled
+    if (process.env.DISCOURSE_INTEGRATION_ENABLED === 'false') {
+      return false;
+    }
+
     try {
       await this.client.get('/site.json');
       return true;
     } catch (error) {
-      logger.error('Discourse health check failed:', error);
+      logger.warn('Discourse health check failed:', error);
       return false;
     }
   }

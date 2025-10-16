@@ -4,8 +4,10 @@
 
 import dotenv from 'dotenv';
 import Joi from 'joi';
+import path from 'path';
 
-dotenv.config();
+// Load .env from project root (parent directory of backend)
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const envSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'staging', 'production').default('development'),
@@ -32,7 +34,7 @@ const envSchema = Joi.object({
   BLUENEXUS_EMBEDDING_MODEL: Joi.string().default('text-embedding-3-large'),
   
   // Kwaai Integration
-  KWAAI_API_KEY: Joi.string().required(),
+  KWAAI_API_KEY: Joi.string().optional(),
   KWAAI_ENDPOINT: Joi.string().default('https://api.kwaai.ai/v1'),
   KWAAI_MODEL: Joi.string().default('kwaainet/llama-3.2-3b-instruct'),
   
@@ -50,12 +52,17 @@ const envSchema = Joi.object({
   
   // Integration
   DISCOURSE_API_KEY: Joi.string().optional(),
-  
+
+  // Integration Toggles
+  KWAAI_INTEGRATION_ENABLED: Joi.boolean().default(false),
+  DISCOURSE_INTEGRATION_ENABLED: Joi.boolean().default(false),
+  PHALA_INTEGRATION_ENABLED: Joi.boolean().default(false),
+
   // Features
   MULTI_AGENT_MODE: Joi.boolean().default(true),
   CROSS_SESSION_SYNTHESIS: Joi.boolean().default(true),
   PRIVACY_SIMULATION: Joi.boolean().default(true),
-  
+
   // CORS
   CORS_ORIGIN: Joi.string().default('http://localhost:3000')
 }).unknown();
@@ -113,12 +120,19 @@ export const config = {
   
   // Integration
   discourseApiKey: envVars.DISCOURSE_API_KEY,
-  
+
+  // Integration Toggles
+  integrations: {
+    kwaai: envVars.KWAAI_INTEGRATION_ENABLED,
+    discourse: envVars.DISCOURSE_INTEGRATION_ENABLED,
+    phala: envVars.PHALA_INTEGRATION_ENABLED
+  },
+
   // Features
   multiAgentMode: envVars.MULTI_AGENT_MODE,
   crossSessionSynthesis: envVars.CROSS_SESSION_SYNTHESIS,
   privacySimulation: envVars.PRIVACY_SIMULATION,
-  
+
   // CORS
   corsOrigin: envVars.CORS_ORIGIN,
   

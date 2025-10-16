@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Core Database Services
   postgres:
-    image: postgres:15-alpine
+    image: ankane/pgvector:v0.5.1
     container_name: bgin-postgres
     environment:
       POSTGRES_DB: bgin_mvp

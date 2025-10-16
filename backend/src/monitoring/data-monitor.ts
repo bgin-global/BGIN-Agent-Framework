@@ -394,19 +394,19 @@ export class DataMonitor {
       const discourseHealth = await discourseClient.healthCheck();
       const kwaaiHealth = await kwaaiClient.healthCheck();
 
-      // Get last sync time
+      // Get last sync time (using metadata->>'source' to check for discourse documents)
       const lastSyncResult = await database.query(`
-        SELECT MAX(created_at) as last_sync 
-        FROM archive_documents 
-        WHERE source = 'discourse'
+        SELECT MAX(created_at) as last_sync
+        FROM archive_documents
+        WHERE metadata->>'source' = 'discourse'
       `);
       const lastSync = lastSyncResult.rows[0].last_sync || 'Never';
 
-      // Get sync errors
+      // Get sync errors (using metadata->>'source' to check for discourse documents)
       const syncErrorsResult = await database.query(`
-        SELECT COUNT(*) as errors 
-        FROM archive_documents 
-        WHERE source = 'discourse' 
+        SELECT COUNT(*) as errors
+        FROM archive_documents
+        WHERE metadata->>'source' = 'discourse'
         AND processing_status = 'failed'
       `);
       const syncErrors = parseInt(syncErrorsResult.rows[0].errors);

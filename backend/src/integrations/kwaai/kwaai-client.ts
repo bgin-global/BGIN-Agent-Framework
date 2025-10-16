@@ -315,6 +315,11 @@ export class KwaaiClient {
   }
 
   async healthCheck(): Promise<boolean> {
+    // Skip health check if Kwaai integration is disabled
+    if (process.env.KWAAI_INTEGRATION_ENABLED === 'false') {
+      return false;
+    }
+
     if (this.mockMode) {
       return true;
     }
@@ -323,7 +328,7 @@ export class KwaaiClient {
       await this.client.get('/health');
       return true;
     } catch (error) {
-      logger.error('Kwaai health check failed:', error);
+      logger.warn('Kwaai health check failed:', error);
       return false;
     }
   }
