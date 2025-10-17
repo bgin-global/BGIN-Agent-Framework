@@ -44,7 +44,7 @@ const BGINMultiAgentInterface = () => {
   const [uploadAuthor, setUploadAuthor] = useState('');
   const [uploadTags, setUploadTags] = useState('');
   const [uploadWorkingGroup, setUploadWorkingGroup] = useState('');
-  const [workingGroups, setWorkingGroups] = useState<any[]>([]);
+  const [workingGroups] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [showMobileAgentSelector, setShowMobileAgentSelector] = useState(false); // Mobile agent selector
   const [showMobileSessionSelector, setShowMobileSessionSelector] = useState(false); // Mobile session selector
@@ -107,8 +107,8 @@ const BGINMultiAgentInterface = () => {
   });
   
   // Conference Sessions State
-  const [conferenceSessions, setConferenceSessions] = useState<any[]>([]);
-  const [conferenceTracks, setConferenceTracks] = useState<any[]>([]);
+  const [conferenceSessions] = useState<any[]>([]);
+  const [conferenceTracks] = useState<any[]>([]);
   const [showConferenceSessions, setShowConferenceSessions] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<string>('all');
   const [selectedDay, setSelectedDay] = useState<string>('all');

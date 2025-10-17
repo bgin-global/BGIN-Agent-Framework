@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { config } from './utils/config';
 import { logger } from './utils/logger';
 import { database } from './utils/database';
@@ -106,13 +107,13 @@ class BGINServer {
 
     // API routes
     this.app.use('/api/auth', authRoutes);
-    
+
     // ToIP routes (public for agent registration)
     this.app.use('/api/toip', toipRoutes);
-    
+
     // Privacy Pools routes (public for ASP functionality)
     this.app.use('/api/privacy-pools', privacyPoolsRoutes);
-    
+
     // Protected routes
     this.app.use('/api/agents/archive', authMiddleware, archiveRoutes);
     this.app.use('/api/agents/codex', authMiddleware, codexRoutes);
@@ -121,9 +122,20 @@ class BGINServer {
     this.app.use('/api/trust', authMiddleware, trustRoutes);
     this.app.use('/api/chat', authMiddleware, chatRoutes);
 
-    // 404 handler
-    this.app.use('*', (req, res) => {
-      res.status(404).json({ error: 'Route not found' });
+    // Serve static files from frontend build
+    // Path: backend/dist -> backend/../frontend/dist
+    const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+    this.app.use(express.static(frontendDistPath));
+
+    // SPA fallback - serve index.html for all non-API routes
+    // This must be last to allow API 404s to work properly
+    this.app.get('*', (req, res) => {
+      // Only serve index.html for non-API routes
+      if (!req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+        res.sendFile(path.join(frontendDistPath, 'index.html'));
+      } else {
+        res.status(404).json({ error: 'API route not found' });
+      }
     });
   }
 
