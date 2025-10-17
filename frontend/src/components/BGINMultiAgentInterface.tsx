@@ -399,6 +399,23 @@ const BGINMultiAgentInterface = () => {
     loadConferenceTracks();
   }, []);
 
+  // Load persisted chat on mount and when session/agent/mode changes
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const localApiService = LocalApiService.getInstance();
+        const result = await localApiService.loadChat('bgin-ui', selectedSession);
+        const messageKey = multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`;
+        if (result && Array.isArray(result.messages) && result.messages.length > 0) {
+          setMessages(prev => ({ ...prev, [messageKey]: result.messages }));
+        }
+      } catch (e) {
+        console.error('Failed to load saved chat:', e);
+      }
+    };
+    run();
+  }, [selectedSession, selectedAgent, multiAgentMode]);
+
   const currentMessages = messages[multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`] || [];
 
   const handleSendMessage = async () => {
@@ -483,7 +500,18 @@ const BGINMultiAgentInterface = () => {
           ...prev,
           [messageKey]: [...(prev[messageKey] || []), aiResponse]
         }));
-        
+        // Persist chat after adding AI response
+        try {
+          await localApiService.saveChat(
+            'bgin-ui',
+            selectedSession,
+            [...(currentMessages || []), newMessage, aiResponse],
+            { agentType: selectedAgent, multiAgent: multiAgentMode }
+          );
+        } catch (e) {
+          console.error('Failed to save chat:', e);
+        }
+
       } catch (error) {
         console.error('Failed to get Phala Cloud response:', error);
         // Fallback to mock response
