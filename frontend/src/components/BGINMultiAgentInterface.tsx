@@ -9,12 +9,19 @@ import {
 import LocalApiService from '../services/localApiService';
 
 const BGINMultiAgentInterface = () => {
-  const [selectedAgent, setSelectedAgent] = useState('archive');
-  const [selectedSession, setSelectedSession] = useState('bgin-agent-hack');
+  // Restore session state from localStorage on mount
+  const [selectedAgent, setSelectedAgent] = useState(() => {
+    return localStorage.getItem('bgin-selectedAgent') || 'archive';
+  });
+  const [selectedSession, setSelectedSession] = useState(() => {
+    return localStorage.getItem('bgin-selectedSession') || 'bgin-agent-hack';
+  });
   const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [inputValue, setInputValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [multiAgentMode, setMultiAgentMode] = useState(false);
+  const [multiAgentMode, setMultiAgentMode] = useState(() => {
+    return localStorage.getItem('bgin-multiAgentMode') === 'true';
+  });
   const [privacyLevel, setPrivacyLevel] = useState('selective');
   const [kwaaiConnected] = useState(false);
   const [fpProjectConnected] = useState(false);
@@ -45,19 +52,21 @@ const BGINMultiAgentInterface = () => {
   // Load working groups on component mount
   useEffect(() => {
     const loadWorkingGroups = async () => {
-      try {
-        const apiService = LocalApiService.getInstance();
-        const response = await apiService.getWorkingGroups();
-        if (response.success) {
-          setWorkingGroups(response.workingGroups);
-          // Set default working group to the first one
-          if (response.workingGroups.length > 0) {
-            setUploadWorkingGroup(response.workingGroups[0].id);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load working groups:', error);
-      }
+      // TODO: Backend endpoint /api/working-groups not yet implemented
+      // Commenting out to prevent 404 errors
+      // try {
+      //   const apiService = LocalApiService.getInstance();
+      //   const response = await apiService.getWorkingGroups();
+      //   if (response.success) {
+      //     setWorkingGroups(response.workingGroups);
+      //     // Set default working group to the first one
+      //     if (response.workingGroups.length > 0) {
+      //       setUploadWorkingGroup(response.workingGroups[0].id);
+      //     }
+      //   }
+      // } catch (error) {
+      //   console.error('Failed to load working groups:', error);
+      // }
     };
 
     loadWorkingGroups();
@@ -107,23 +116,27 @@ const BGINMultiAgentInterface = () => {
 
   // Load conference data
   const loadConferenceSessions = async () => {
-    try {
-      const localApiService = LocalApiService.getInstance();
-      const sessions = await localApiService.getConferenceSessions();
-      setConferenceSessions(sessions);
-    } catch (error) {
-      console.error('Failed to load conference sessions:', error);
-    }
+    // TODO: Backend endpoint /api/conference/sessions not yet implemented
+    // Commenting out to prevent 404 errors
+    // try {
+    //   const localApiService = LocalApiService.getInstance();
+    //   const sessions = await localApiService.getConferenceSessions();
+    //   setConferenceSessions(sessions);
+    // } catch (error) {
+    //   console.error('Failed to load conference sessions:', error);
+    // }
   };
 
   const loadConferenceTracks = async () => {
-    try {
-      const localApiService = LocalApiService.getInstance();
-      const tracks = await localApiService.getConferenceTracks();
-      setConferenceTracks(tracks);
-    } catch (error) {
-      console.error('Failed to load conference tracks:', error);
-    }
+    // TODO: Backend endpoint /api/conference/tracks not yet implemented
+    // Commenting out to prevent 404 errors
+    // try {
+    //   const localApiService = LocalApiService.getInstance();
+    //   const tracks = await localApiService.getConferenceTracks();
+    //   setConferenceTracks(tracks);
+    // } catch (error) {
+    //   console.error('Failed to load conference tracks:', error);
+    // }
   };
 
   const initConferenceSession = async (sessionId: string) => {
@@ -399,6 +412,81 @@ const BGINMultiAgentInterface = () => {
     loadConferenceTracks();
   }, []);
 
+  // Load chat history when session changes
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      // Map session ID to room key
+      const getRoomKey = (sessionId: string): any => {
+        const mapping: Record<string, any> = {
+          'bgin-agent-hack': 'bgin-agent-hack',
+          'ikp': 'identity-privacy',
+          'cyber-security': 'cybersecurity',
+          'fase': 'fase',
+          'general': 'general',
+          'direct-agent': 'direct-agent'
+        };
+        return mapping[sessionId] || null;
+      };
+
+      const roomKey = getRoomKey(selectedSession);
+      if (!roomKey) {
+        console.log(`No room key mapping for session: ${selectedSession}`);
+        return;
+      }
+
+      try {
+        console.log(`📖 Loading chat history for room: ${roomKey}`);
+        const apiService = LocalApiService.getInstance();
+        const result = await apiService.getRoomMessages(roomKey);
+
+        if (result.success && result.messages && result.messages.length > 0) {
+          console.log(`✅ Loaded ${result.messages.length} messages from room: ${roomKey}`);
+
+          // Convert database messages to UI format
+          const loadedMessages = result.messages.map((msg: any, index: number) => ({
+            id: Date.now() + index,
+            type: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content,
+            timestamp: new Date(msg.created_at).toLocaleTimeString(),
+            agent: msg.agent_type || 'archive',
+            agentType: msg.agent_type || 'archive', // Add agentType field for UI compatibility
+            model: msg.model_used,
+            sessionId: selectedSession
+          }));
+
+          // Set messages for both single and multi-agent mode
+          setMessages(prev => ({
+            ...prev,
+            [`${selectedSession}-${selectedAgent}`]: loadedMessages,
+            [`${selectedSession}-multi`]: loadedMessages
+          }));
+        } else {
+          console.log(`No messages found for room: ${roomKey}`);
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      }
+    };
+
+    loadChatHistory();
+  }, [selectedSession]); // Reload when session changes
+
+  // Save session state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('bgin-selectedAgent', selectedAgent);
+    console.log(`💾 Saved selectedAgent to localStorage: ${selectedAgent}`);
+  }, [selectedAgent]);
+
+  useEffect(() => {
+    localStorage.setItem('bgin-selectedSession', selectedSession);
+    console.log(`💾 Saved selectedSession to localStorage: ${selectedSession}`);
+  }, [selectedSession]);
+
+  useEffect(() => {
+    localStorage.setItem('bgin-multiAgentMode', String(multiAgentMode));
+    console.log(`💾 Saved multiAgentMode to localStorage: ${multiAgentMode}`);
+  }, [multiAgentMode]);
+
   const currentMessages = messages[multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`] || [];
 
   const handleSendMessage = async () => {
@@ -430,7 +518,22 @@ const BGINMultiAgentInterface = () => {
       try {
         let response;
         const localApiService = LocalApiService.getInstance();
-        
+
+        // Map session ID to chat room key for history persistence
+        const getRoomKey = (sessionId: string): any => {
+          const mapping: Record<string, any> = {
+            'bgin-agent-hack': 'bgin-agent-hack',
+            'ikp': 'identity-privacy',
+            'cyber-security': 'cybersecurity',
+            'fase': 'fase',
+            'general': 'general',
+            'direct-agent': 'direct-agent'
+          };
+          return mapping[sessionId] || sessionId;
+        };
+
+        const roomKey = getRoomKey(selectedSession.replace('multi-agent-hub-', ''));
+
         if (isMultiAgentHub) {
           // Multi Agent Hub - collaborative multi-agent responses
           console.log('🤖 Multi Agent Hub: Collaborative multi-agent processing');
@@ -438,7 +541,8 @@ const BGINMultiAgentInterface = () => {
             inputValue,
             selectedAgent,
             selectedSession.replace('multi-agent-hub-', ''), // Remove prefix for API
-            true // Force multi-agent mode
+            true, // Force multi-agent mode
+            roomKey // Save to chat room
           );
         } else if (isTrackSession) {
           // Individual track session - single agent contributing to shared project
@@ -447,7 +551,8 @@ const BGINMultiAgentInterface = () => {
             inputValue,
             selectedAgent,
             selectedSession,
-            false // Single agent mode
+            false, // Single agent mode
+            getRoomKey(selectedSession) // Save to chat room
           );
         } else {
           // Regular session
@@ -455,7 +560,8 @@ const BGINMultiAgentInterface = () => {
             inputValue,
             selectedAgent,
             selectedSession,
-            multiAgentMode
+            multiAgentMode,
+            roomKey // Save to chat room
           );
         }
         
@@ -1703,7 +1809,7 @@ const BGINMultiAgentInterface = () => {
                         <>
                           <div className="flex items-center gap-1 text-blue-300">
                             <Brain className="w-3 h-3" />
-                            <span>{message.multiAgent ? 'Multi-Agent' : message.agentType.charAt(0).toUpperCase() + message.agentType.slice(1)}</span>
+                            <span>{message.multiAgent ? 'Multi-Agent' : (message.agentType || message.agent || 'assistant').charAt(0).toUpperCase() + (message.agentType || message.agent || 'assistant').slice(1)}</span>
                           </div>
                           {message.confidence && (
                             <div className="flex items-center gap-1 text-green-300">

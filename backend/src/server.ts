@@ -24,6 +24,7 @@ import trustRoutes from './routes/trust';
 import healthRoutes from './routes/health';
 import toipRoutes from './routes/toip';
 import privacyPoolsRoutes from './routes/privacy-pools';
+import chatRoutes from './routes/chat';
 
 // Middleware imports
 import { errorHandler } from './middleware/errorHandler';
@@ -118,6 +119,7 @@ class BGINServer {
     this.app.use('/api/agents/discourse', authMiddleware, discourseRoutes);
     this.app.use('/api/synthesis', authMiddleware, synthesisRoutes);
     this.app.use('/api/trust', authMiddleware, trustRoutes);
+    this.app.use('/api/chat', authMiddleware, chatRoutes);
 
     // 404 handler
     this.app.use('*', (req, res) => {

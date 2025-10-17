@@ -15,6 +15,7 @@ export interface GenerationOptions {
   topP?: number;
   stopSequences?: string[];
   stream?: boolean;
+  systemPrompt?: string;  // System message for chat models
 }
 
 export interface LLMResponse {
@@ -542,14 +543,20 @@ class BlueNexusProvider implements LLMProvider {
         maxTokens = 4000,
         temperature = 0.2,
         topP = 0.9,
-        stopSequences = []
+        stopSequences = [],
+        systemPrompt
       } = options;
+
+      // Build messages array with optional system message
+      const messages: Array<{ role: string; content: string }> = [];
+      if (systemPrompt) {
+        messages.push({ role: 'system', content: systemPrompt });
+      }
+      messages.push({ role: 'user', content: prompt });
 
       const requestPayload = {
         model,
-        messages: [
-          { role: 'user', content: prompt }
-        ],
+        messages,
         max_tokens: maxTokens,
         temperature,
         top_p: topP,
@@ -570,8 +577,18 @@ class BlueNexusProvider implements LLMProvider {
         model: response.data.model,
         finishReason: choice.finish_reason
       };
-    } catch (error) {
-      logger.error('BlueNexus API error:', error);
+    } catch (error: any) {
+      logger.error('BlueNexus API error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data
+        }
+      });
       throw error;
     }
   }

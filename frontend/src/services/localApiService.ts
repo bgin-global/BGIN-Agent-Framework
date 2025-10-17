@@ -19,6 +19,36 @@ export interface LocalResponse {
   multiAgent: boolean;
 }
 
+// Chat room types
+export type ChatRoomKey =
+  | 'bgin-agent-hack'
+  | 'identity-privacy'
+  | 'cybersecurity'
+  | 'fase'
+  | 'general'
+  | 'direct-agent';
+
+export interface ChatRoom {
+  id: string;
+  room_key: ChatRoomKey;
+  name: string;
+  description: string;
+  agent_type: string;
+  is_multi_agent: boolean;
+  metadata: any;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  agent_type?: string;
+  model_used?: string;
+  metadata?: any;
+  created_at: string;
+}
+
 export class LocalApiService {
   private static instance: LocalApiService;
   
@@ -30,56 +60,156 @@ export class LocalApiService {
   }
 
   /**
-   * Send message to local BGIN API
+   * Send message to BGIN Backend API
    */
   async sendMessage(
     message: string,
     agentType: string,
     sessionType: string,
-    isMultiAgent: boolean = false
+    isMultiAgent: boolean = false,
+    roomKey?: ChatRoomKey  // Chat room key for history saving
   ): Promise<LocalResponse> {
     try {
-      console.log(`🤖 Sending ${agentType} message to local BGIN API for ${sessionType} session`);
-      
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+      console.log(`🤖 Sending ${agentType} message to BGIN Backend API for ${sessionType} session`);
+
+      // 1. Save user message to chat room (if roomKey provided)
+      if (roomKey) {
+        console.log(`💾 Saving user message to room: ${roomKey}`);
+        await this.saveMessageToRoom(roomKey, {
+          role: 'user',
+          content: message
+        });
+      } else {
+        console.warn('⚠️ No roomKey provided - message will not be saved');
+      }
+
+      // Determine API endpoint based on agent type
+      const endpoint = isMultiAgent
+        ? `${API_BASE_URL}/synthesis/collaborate`
+        : `${API_BASE_URL}/agents/archive/query`;
+
+      // Prepare request body based on endpoint
+      const requestBody = isMultiAgent
+        ? {
+            sessionId: sessionType,
+            agents: ['archive', 'codex', 'discourse'],
+            input: { query: message },
+            type: 'comprehensive_analysis'
+          }
+        : {
+            query: message,
+            sessionId: sessionType,
+            userContext: {
+              participantHash: 'demo-user',
+              sessionId: sessionType,
+              privacyLevel: 'selective',
+              trustScore: 0.8,
+              accessRights: []
+            },
+            filters: {},
+            includeCrossSession: false,
+            maxResults: 10,
+            synthesisMode: 'summary'
+          };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer demo-token'  // MVP auth token
         },
-        body: JSON.stringify({
-          message: message,
-          agent: agentType,
-          session: sessionType,
-          multiAgent: isMultiAgent
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
-        throw new Error(`Local API error: ${response.status} ${response.statusText}`);
+        throw new Error(`Backend API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Local API response received:', data);
+      console.log('✅ Backend API response received:', data);
 
-      return {
-        content: data.content,
-        agent: data.agent,
-        session: data.session,
-        timestamp: data.timestamp,
-        confidence: data.confidence,
-        sources: data.sources,
-        processingTime: data.processingTime,
-        llmUsed: data.llmUsed,
-        model: data.model,
-        multiAgent: data.multiAgent
-      };
+      // Map backend response to frontend format
+      const mappedResponse = this.mapBackendResponse(data, agentType, sessionType, isMultiAgent);
+
+      // 2. Save assistant message to chat room (if roomKey provided)
+      if (roomKey) {
+        console.log(`💾 Saving assistant message to room: ${roomKey}`);
+        await this.saveMessageToRoom(roomKey, {
+          role: 'assistant',
+          content: mappedResponse.content,
+          agentType: agentType,
+          modelUsed: mappedResponse.model,
+          metadata: {
+            confidence: mappedResponse.confidence,
+            sources: mappedResponse.sources,
+            processingTime: mappedResponse.processingTime
+          }
+        });
+      }
+
+      return mappedResponse;
 
     } catch (error) {
-      console.error('Local API request failed:', error);
-      
-      // Fallback to mock response if local API is unavailable
+      console.error('Backend API request failed:', error);
+
+      // Fallback to mock response if backend API is unavailable
       return this.generateFallbackResponse(message, agentType, sessionType, isMultiAgent);
     }
+  }
+
+  /**
+   * Map backend response to frontend LocalResponse format
+   */
+  private mapBackendResponse(
+    data: any,
+    agentType: string,
+    sessionType: string,
+    isMultiAgent: boolean
+  ): LocalResponse {
+    if (isMultiAgent && data.collaboration) {
+      // Multi-agent synthesis response
+      return {
+        content: data.collaboration.synthesisResult?.summary || 'Multi-agent analysis completed',
+        agent: 'multi-agent',
+        session: sessionType,
+        timestamp: data.collaboration.completedAt || new Date().toISOString(),
+        confidence: data.collaboration.confidenceScore || 0.85,
+        sources: 0,
+        processingTime: data.collaboration.processingTimeMs || 0,
+        llmUsed: true,
+        model: 'multi-agent-system',
+        multiAgent: true
+      };
+    } else if (data.success && data.response) {
+      // Archive agent RAG response
+      const ragResponse = data.response;
+      return {
+        content: ragResponse.answer || ragResponse.synthesis || 'Query processed successfully',
+        agent: agentType,
+        session: sessionType,
+        timestamp: data.timestamp || new Date().toISOString(),
+        confidence: ragResponse.confidence || 0.8,
+        sources: ragResponse.sources?.length || 0,
+        processingTime: ragResponse.processingTime || 0,
+        llmUsed: true,
+        model: ragResponse.model || 'archive-agent',
+        multiAgent: false
+      };
+    }
+
+    // Fallback for unexpected response format
+    return {
+      content: JSON.stringify(data),
+      agent: agentType,
+      session: sessionType,
+      timestamp: new Date().toISOString(),
+      confidence: 0.5,
+      sources: 0,
+      processingTime: 0,
+      llmUsed: false,
+      model: 'unknown',
+      multiAgent: isMultiAgent
+    };
   }
 
   /**
@@ -494,7 +624,7 @@ export class LocalApiService {
   async getWorkingGroups(): Promise<any> {
     try {
       const response = await fetch(`${API_BASE_URL}/working-groups`);
-      
+
       if (response.ok) {
         return await response.json();
       } else {
@@ -503,6 +633,100 @@ export class LocalApiService {
     } catch (error) {
       console.error('Failed to get working groups:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Save message to chat room
+   */
+  async saveMessageToRoom(
+    roomKey: ChatRoomKey,
+    message: {
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+      agentType?: string;
+      modelUsed?: string;
+      metadata?: any;
+    }
+  ): Promise<void> {
+    try {
+      console.log(`📤 POST /api/chat/rooms/${roomKey}/messages`, message);
+      const response = await fetch(`${API_BASE_URL}/chat/rooms/${roomKey}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer demo-token'
+        },
+        body: JSON.stringify(message)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error(`❌ Failed to save message (${response.status}):`, errorData);
+      } else {
+        const result = await response.json();
+        console.log(`✅ Message saved successfully:`, result);
+      }
+    } catch (error) {
+      console.error('❌ Failed to save message to room:', error);
+      // Don't throw - continue even if save fails
+    }
+  }
+
+  /**
+   * Get all chat rooms
+   */
+  async getChatRooms(): Promise<{ success: boolean; rooms: ChatRoom[] }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/rooms`, {
+        headers: { 'Authorization': 'Bearer demo-token' }
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      return { success: false, rooms: [] };
+    } catch (error) {
+      console.error('Failed to get chat rooms:', error);
+      return { success: false, rooms: [] };
+    }
+  }
+
+  /**
+   * Get message history for a specific room
+   */
+  async getRoomMessages(
+    roomKey: ChatRoomKey
+  ): Promise<{ success: boolean; messages: ChatMessage[] }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/rooms/${roomKey}/messages`, {
+        headers: { 'Authorization': 'Bearer demo-token' }
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      return { success: false, messages: [] };
+    } catch (error) {
+      console.error('Failed to get room messages:', error);
+      return { success: false, messages: [] };
+    }
+  }
+
+  /**
+   * Clear all messages in a room
+   */
+  async clearRoomMessages(roomKey: ChatRoomKey): Promise<{ success: boolean }> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/rooms/${roomKey}/messages`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer demo-token' }
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      return { success: false };
+    } catch (error) {
+      console.error('Failed to clear room messages:', error);
+      return { success: false };
     }
   }
 }
