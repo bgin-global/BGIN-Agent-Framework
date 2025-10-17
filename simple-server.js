@@ -838,6 +838,45 @@ app.delete('/api/chat/delete/:filename', (req, res) => {
   }
 });
 
+// Reset chat conversation for a project/session (DB and filesystem)
+app.delete('/api/chat/reset/:projectId/:sessionId', async (req, res) => {
+  const { projectId, sessionId } = req.params;
+  let dbDeleted = 0;
+  let fsDeleted = 0;
+  try {
+    if (dbReady && pgPool) {
+      try {
+        const r = await pgPool.query(
+          'DELETE FROM chats WHERE project_id = $1 AND session_id = $2',
+          [projectId, sessionId]
+        );
+        dbDeleted = r.rowCount || 0;
+      } catch (e) {
+        console.warn('DB reset failed, continuing with filesystem cleanup:', e.message);
+      }
+    }
+
+    try {
+      const files = fs.readdirSync(CHAT_STORAGE_DIR)
+        .filter(file => file.startsWith(`${projectId}_${sessionId}_`) && file.endsWith('.json'));
+      files.forEach(file => {
+        const filepath = path.join(CHAT_STORAGE_DIR, file);
+        if (fs.existsSync(filepath)) {
+          fs.unlinkSync(filepath);
+          fsDeleted += 1;
+        }
+      });
+    } catch (e) {
+      console.warn('Filesystem reset failed:', e.message);
+    }
+
+    res.json({ success: true, projectId, sessionId, dbDeleted, fsDeleted });
+  } catch (error) {
+    console.error('Error resetting chat:', error);
+    res.status(500).json({ error: 'Failed to reset chat', details: error.message });
+  }
+});
+
 // Block 13 Conference Tracks and Working Groups
 const CONFERENCE_TRACKS = {
   'bgin-agent-hack': {

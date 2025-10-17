@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Send, User, Mic, Square, Upload, ChevronDown, MessageSquare, 
-  Network, Brain, Target, BarChart3, Lock, Fingerprint, 
+  Network, Brain, Target, BarChart3, Lock, Fingerprint, RotateCcw,
   ShieldCheck, Cpu, Archive, MessageCircle, Scale, Menu,
   Bell, Award, Lightbulb, BookOpenCheck, ChevronUp,
   Users, Link, Calendar, Filter, Clock
@@ -369,6 +369,21 @@ const BGINMultiAgentInterface = () => {
     agents: { archive: {}, codex: {}, discourse: {} }
   } : null);
   const currentSessionAgent = currentSession?.agents?.[selectedAgent];
+  
+  // Build a default assistant message for the current session/agent
+  const buildDefaultAssistantMessage = () => {
+    const agent = agentTypes[selectedAgent];
+    const session = sessions[selectedSession] || { name: selectedSession, description: 'Session conversation' };
+    return {
+      id: 1,
+      type: 'assistant',
+      content: `**${agent.name} Ready for Configuration** - ${session.name}\n\n**Status**: ${agent.status}\n**Specialization**: ${agent.description}\n**Primary Function**: ${agent.primaryFunction}\n\n**Current Capabilities**:\n${agent.capabilities.map((cap: string) => `• ${cap}`).join('\n')}\n\n**Session Context**: ${session.description}`,
+      timestamp: new Date().toLocaleTimeString(),
+      author: agent.name,
+      agentType: selectedAgent,
+      sessionId: selectedSession
+    };
+  };
 
   // Initialize messages for each agent-session combination
   useEffect(() => {
@@ -408,9 +423,14 @@ const BGINMultiAgentInterface = () => {
         const messageKey = multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`;
         if (result && Array.isArray(result.messages) && result.messages.length > 0) {
           setMessages(prev => ({ ...prev, [messageKey]: result.messages }));
+        } else {
+          // Ensure we show a default assistant message when no history exists
+          setMessages(prev => ({ ...prev, [messageKey]: [buildDefaultAssistantMessage()] }));
         }
       } catch (e) {
         console.error('Failed to load saved chat:', e);
+        const messageKey = multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`;
+        setMessages(prev => ({ ...prev, [messageKey]: [buildDefaultAssistantMessage()] }));
       }
     };
     run();
@@ -674,6 +694,31 @@ const BGINMultiAgentInterface = () => {
             aria-label="View analytics"
           >
             <BarChart3 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={async () => {
+              const confirmed = window.confirm('Reset this conversation? This will permanently delete saved messages for this session.');
+              if (!confirmed) return;
+              try {
+                const localApiService = LocalApiService.getInstance();
+                await localApiService.resetChat('bgin-ui', selectedSession);
+                const result = await localApiService.loadChat('bgin-ui', selectedSession);
+                const messageKey = multiAgentMode ? `${selectedSession}-multi` : `${selectedSession}-${selectedAgent}`;
+                if (result && Array.isArray(result.messages) && result.messages.length > 0) {
+                  setMessages(prev => ({ ...prev, [messageKey]: result.messages }));
+                } else {
+                  // Show default assistant message immediately after reset
+                  setMessages(prev => ({ ...prev, [messageKey]: [buildDefaultAssistantMessage()] }));
+                }
+              } catch (e) {
+                console.error('Failed to reset chat:', e);
+              }
+            }}
+            className="p-2 rounded-lg transition-colors bg-slate-700/50 hover:bg-slate-700"
+            title="Reset conversation"
+            aria-label="Reset conversation"
+          >
+            <RotateCcw className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowTrustNetwork(!showTrustNetwork)}

@@ -270,6 +270,25 @@ export class LocalApiService {
   }
 
   /**
+   * Reset chat conversation for a project/session
+   */
+  async resetChat(projectId: string, sessionId: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/reset/${projectId}/${sessionId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        return await response.json();
+      } else {
+        throw new Error(`Failed to reset chat: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Failed to reset chat:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get all conference sessions
    */
   async getConferenceSessions(): Promise<any> {
