@@ -5,6 +5,7 @@ const cors = require('cors');
 const axios = require('axios');
 const fs = require('fs');
 const multer = require('multer');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -40,6 +41,41 @@ const BLUENEXUS_EMBEDDING_MODEL = process.env.BLUENEXUS_EMBEDDING_MODEL || 'text
 const KWAAI_ENDPOINT = process.env.KWAAI_ENDPOINT || 'https://api.kwaai.ai/v1';
 const KWAAI_API_KEY = process.env.KWAAI_API_KEY || '';
 const KWAAI_MODEL = process.env.KWAAI_MODEL || 'kwaainet/llama-3.2-3b-instruct';
+
+// Optional Postgres configuration for persisting chats in dev:simple
+const DATABASE_URL = process.env.DATABASE_URL;
+let pgPool = null;
+let dbReady = false;
+
+async function initializePostgresIfAvailable() {
+  if (!DATABASE_URL) {
+    console.log('ℹ️  DATABASE_URL not set. Chat persistence will use filesystem.');
+    return;
+  }
+  try {
+    pgPool = new Pool({ connectionString: DATABASE_URL, max: 5 });
+    // Ensure a minimal chats table exists (no extensions required)
+    await pgPool.query(`
+      CREATE TABLE IF NOT EXISTS chats (
+        id TEXT PRIMARY KEY DEFAULT md5(random()::text || clock_timestamp()::text),
+        project_id TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        messages JSONB NOT NULL,
+        metadata JSONB DEFAULT '{}'::jsonb,
+        saved_at TIMESTAMPTZ DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_chats_project_session ON chats(project_id, session_id, saved_at DESC);
+    `);
+    dbReady = true;
+    console.log('✅ Postgres chat store initialized');
+  } catch (err) {
+    console.warn('⚠️  Failed to initialize Postgres chat store. Falling back to filesystem.', err.message);
+    pgPool = null;
+    dbReady = false;
+  }
+}
+
+initializePostgresIfAvailable();
 
 // Agent system prompts
 const getAgentSystemPrompt = (agentType, sessionType) => {
@@ -608,28 +644,53 @@ app.post('/api/chat/save', (req, res) => {
       });
     }
 
-    const chatData = {
-      projectId,
-      sessionId,
-      messages,
-      metadata: metadata || {},
-      savedAt: new Date().toISOString(),
-      version: '1.0.0'
+    const saveToFilesystem = () => {
+      const chatData = {
+        projectId,
+        sessionId,
+        messages,
+        metadata: metadata || {},
+        savedAt: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      const filename = `${projectId}_${sessionId}_${Date.now()}.json`;
+      const filepath = path.join(CHAT_STORAGE_DIR, filename);
+      fs.writeFileSync(filepath, JSON.stringify(chatData, null, 2));
+      return {
+        success: true,
+        message: 'Chat saved successfully (filesystem)',
+        filename,
+        projectId,
+        sessionId,
+        messageCount: messages.length
+      };
     };
 
-    const filename = `${projectId}_${sessionId}_${Date.now()}.json`;
-    const filepath = path.join(CHAT_STORAGE_DIR, filename);
-    
-    fs.writeFileSync(filepath, JSON.stringify(chatData, null, 2));
-    
-    res.json({
-      success: true,
-      message: 'Chat saved successfully',
-      filename,
-      projectId,
-      sessionId,
-      messageCount: messages.length
-    });
+    const save = async () => {
+      if (dbReady && pgPool) {
+        try {
+          const result = await pgPool.query(
+            'INSERT INTO chats (project_id, session_id, messages, metadata) VALUES ($1, $2, $3, $4) RETURNING id, saved_at',
+            [projectId, sessionId, JSON.stringify(messages), JSON.stringify(metadata || {})]
+          );
+          return {
+            success: true,
+            message: 'Chat saved successfully (database)',
+            id: result.rows[0].id,
+            savedAt: result.rows[0].saved_at,
+            projectId,
+            sessionId,
+            messageCount: messages.length
+          };
+        } catch (e) {
+          console.warn('DB save failed, falling back to filesystem:', e.message);
+          return saveToFilesystem();
+        }
+      }
+      return saveToFilesystem();
+    };
+
+    save().then((payload) => res.json(payload));
   } catch (error) {
     console.error('Error saving chat:', error);
     res.status(500).json({ 
@@ -640,35 +701,54 @@ app.post('/api/chat/save', (req, res) => {
 });
 
 // Load chat conversation
-app.get('/api/chat/load/:projectId/:sessionId', (req, res) => {
+app.get('/api/chat/load/:projectId/:sessionId', async (req, res) => {
   try {
     const { projectId, sessionId } = req.params;
-    
-    // Find the most recent chat file for this project/session
-    const files = fs.readdirSync(CHAT_STORAGE_DIR)
-      .filter(file => file.startsWith(`${projectId}_${sessionId}_`) && file.endsWith('.json'))
-      .sort()
-      .reverse(); // Most recent first
-    
-    if (files.length === 0) {
-      return res.json({
+    const loadFromFilesystem = () => {
+      const files = fs.readdirSync(CHAT_STORAGE_DIR)
+        .filter(file => file.startsWith(`${projectId}_${sessionId}_`) && file.endsWith('.json'))
+        .sort()
+        .reverse();
+      if (files.length === 0) {
+        return {
+          success: true,
+          messages: [],
+          message: 'No saved chats found for this project/session'
+        };
+      }
+      const latestFile = files[0];
+      const filepath = path.join(CHAT_STORAGE_DIR, latestFile);
+      const chatData = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+      return {
         success: true,
-        messages: [],
-        message: 'No saved chats found for this project/session'
-      });
-    }
+        messages: chatData.messages,
+        metadata: chatData.metadata,
+        savedAt: chatData.savedAt,
+        filename: latestFile
+      };
+    };
 
-    const latestFile = files[0];
-    const filepath = path.join(CHAT_STORAGE_DIR, latestFile);
-    const chatData = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-    
-    res.json({
-      success: true,
-      messages: chatData.messages,
-      metadata: chatData.metadata,
-      savedAt: chatData.savedAt,
-      filename: latestFile
-    });
+    if (dbReady && pgPool) {
+      try {
+        const r = await pgPool.query(
+          'SELECT messages, metadata, saved_at FROM chats WHERE project_id = $1 AND session_id = $2 ORDER BY saved_at DESC LIMIT 1',
+          [projectId, sessionId]
+        );
+        if (r.rows.length === 0) {
+          return res.json(loadFromFilesystem());
+        }
+        return res.json({
+          success: true,
+          messages: r.rows[0].messages,
+          metadata: r.rows[0].metadata,
+          savedAt: r.rows[0].saved_at
+        });
+      } catch (e) {
+        console.warn('DB load failed, falling back to filesystem:', e.message);
+        return res.json(loadFromFilesystem());
+      }
+    }
+    return res.json(loadFromFilesystem());
   } catch (error) {
     console.error('Error loading chat:', error);
     res.status(500).json({ 
@@ -679,32 +759,48 @@ app.get('/api/chat/load/:projectId/:sessionId', (req, res) => {
 });
 
 // List all saved chats
-app.get('/api/chat/list', (req, res) => {
+app.get('/api/chat/list', async (req, res) => {
   try {
-    const files = fs.readdirSync(CHAT_STORAGE_DIR)
-      .filter(file => file.endsWith('.json'))
-      .map(file => {
-        const filepath = path.join(CHAT_STORAGE_DIR, file);
-        const stats = fs.statSync(filepath);
-        const chatData = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-        
-        return {
-          filename: file,
-          projectId: chatData.projectId,
-          sessionId: chatData.sessionId,
-          messageCount: chatData.messages.length,
-          savedAt: chatData.savedAt,
-          lastModified: stats.mtime,
-          metadata: chatData.metadata
-        };
-      })
-      .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-    
-    res.json({
-      success: true,
-      chats: files,
-      total: files.length
-    });
+    const listFromFilesystem = () => {
+      const files = fs.readdirSync(CHAT_STORAGE_DIR)
+        .filter(file => file.endsWith('.json'))
+        .map(file => {
+          const filepath = path.join(CHAT_STORAGE_DIR, file);
+          const stats = fs.statSync(filepath);
+          const chatData = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+          return {
+            filename: file,
+            projectId: chatData.projectId,
+            sessionId: chatData.sessionId,
+            messageCount: chatData.messages.length,
+            savedAt: chatData.savedAt,
+            lastModified: stats.mtime,
+            metadata: chatData.metadata
+          };
+        })
+        .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+      return { success: true, chats: files, total: files.length };
+    };
+
+    if (dbReady && pgPool) {
+      try {
+        const r = await pgPool.query(
+          'SELECT project_id, session_id, saved_at, messages, metadata FROM chats ORDER BY saved_at DESC LIMIT 200'
+        );
+        const chats = r.rows.map(row => ({
+          projectId: row.project_id,
+          sessionId: row.session_id,
+          messageCount: Array.isArray(row.messages) ? row.messages.length : 0,
+          savedAt: row.saved_at,
+          metadata: row.metadata
+        }));
+        return res.json({ success: true, chats, total: chats.length });
+      } catch (e) {
+        console.warn('DB list failed, falling back to filesystem:', e.message);
+        return res.json(listFromFilesystem());
+      }
+    }
+    return res.json(listFromFilesystem());
   } catch (error) {
     console.error('Error listing chats:', error);
     res.status(500).json({ 
@@ -739,6 +835,45 @@ app.delete('/api/chat/delete/:filename', (req, res) => {
       error: 'Failed to delete chat',
       details: error.message 
     });
+  }
+});
+
+// Reset chat conversation for a project/session (DB and filesystem)
+app.delete('/api/chat/reset/:projectId/:sessionId', async (req, res) => {
+  const { projectId, sessionId } = req.params;
+  let dbDeleted = 0;
+  let fsDeleted = 0;
+  try {
+    if (dbReady && pgPool) {
+      try {
+        const r = await pgPool.query(
+          'DELETE FROM chats WHERE project_id = $1 AND session_id = $2',
+          [projectId, sessionId]
+        );
+        dbDeleted = r.rowCount || 0;
+      } catch (e) {
+        console.warn('DB reset failed, continuing with filesystem cleanup:', e.message);
+      }
+    }
+
+    try {
+      const files = fs.readdirSync(CHAT_STORAGE_DIR)
+        .filter(file => file.startsWith(`${projectId}_${sessionId}_`) && file.endsWith('.json'));
+      files.forEach(file => {
+        const filepath = path.join(CHAT_STORAGE_DIR, file);
+        if (fs.existsSync(filepath)) {
+          fs.unlinkSync(filepath);
+          fsDeleted += 1;
+        }
+      });
+    } catch (e) {
+      console.warn('Filesystem reset failed:', e.message);
+    }
+
+    res.json({ success: true, projectId, sessionId, dbDeleted, fsDeleted });
+  } catch (error) {
+    console.error('Error resetting chat:', error);
+    res.status(500).json({ error: 'Failed to reset chat', details: error.message });
   }
 });
 
